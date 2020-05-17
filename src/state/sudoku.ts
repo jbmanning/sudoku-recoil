@@ -212,13 +212,12 @@ export class SudokuStore {
       }
 
       // Naked pairs/triples/quads
-      // TODO: This will only find first union, not always correct if it doesn't modify anything
       for (const g of this.groups) {
         let cells = g.cells.filter((c) => !c.value);
         cells.sort((a, b) => a.availableNumbers.length - b.availableNumbers.length);
 
-        const [union, covered] = findCoveredUnions((c) => c.availableNumbers, cells);
-        if (union && covered) {
+        const coveredUnions = findCoveredUnions((c) => c.availableNumbers, cells);
+        for (const [union, covered] of coveredUnions) {
           for (const c of cells) {
             if (!covered.includes(c)) {
               if (c.addNotPossibleNumbers(...union)) {
@@ -231,10 +230,9 @@ export class SudokuStore {
       }
 
       // Hidden pairs/triples
-      // TODO: This will only find first union, not always correct if it doesn't modify anything
       for (const g of this.groups) {
-        const [union, covered] = findCoveredUnions((cl) => cl.matching, g.mappedCells);
-        if (union && covered) {
+        const coveredUnions = findCoveredUnions((cl) => cl.matching, g.mappedCells);
+        for (const [union, covered] of coveredUnions) {
           const removals = POSSIBLE_VALUES.filter((p) => !covered.find((cov) => cov.n === p));
           for (const c of union) {
             if (c.addNotPossibleNumbers(...removals)) {
