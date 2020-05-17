@@ -22,3 +22,4 @@ export { default as hiddenCandidates2 } from "./hiddenCandidates2";
 export { default as hiddenCandidates3 } from "./hiddenCandidates3";
 export { default as pointingPairs } from "./pointingPairs";
 export { default as hard1 } from "./hard1";
+export { default as xWing } from "./xWing";

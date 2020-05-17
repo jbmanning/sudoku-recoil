@@ -181,87 +181,119 @@ export class SudokuStore {
     return this.board.every((c) => c.isValid);
   }
 
+  @action solvedSquare(): boolean {
+    for (const c of this.board) {
+      if (c.availableNumbers.length === 1) {
+        c.value = c.availableNumbers[0];
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @action hiddenSingle(): boolean {
+    for (const g of this.groups) {
+      for (const possible of POSSIBLE_VALUES) {
+        const possibleCells = g.cells.filter((c) => c.availableNumbers.includes(possible));
+        if (possibleCells.length === 1) {
+          possibleCells[0].value = possible;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @action nakedSets(): boolean {
+    for (const g of this.groups) {
+      let cells = g.cells.filter((c) => !c.value);
+      cells.sort((a, b) => a.availableNumbers.length - b.availableNumbers.length);
+
+      const coveredUnions = findCoveredUnions((c) => c.availableNumbers, cells);
+      for (const [union, covered] of coveredUnions) {
+        let performedAction = false;
+        for (const c of cells) {
+          if (!covered.includes(c)) {
+            if (c.addNotPossibleNumbers(...union)) {
+              performedAction = true;
+            }
+          }
+        }
+        if (performedAction) return performedAction;
+      }
+    }
+    return false;
+  }
+
+  @action hiddenSets(): boolean {
+    for (const g of this.groups) {
+      const coveredUnions = findCoveredUnions((cl) => cl.matching, g.mappedCells);
+      for (const [union, covered] of coveredUnions) {
+        const removals = POSSIBLE_VALUES.filter((p) => !covered.find((cov) => cov.n === p));
+        let performedAction = false;
+        for (const c of union) {
+          if (c.addNotPossibleNumbers(...removals)) {
+            performedAction = true;
+          }
+        }
+        if (performedAction) return performedAction;
+      }
+    }
+    return false;
+  }
+
+  @action pointingPairs(): boolean {
+    for (const g of this.groups) {
+      for (const mc of g.mappedCells) {
+        const matchingGroups = mc.matching[0].groups.filter(
+          (mcg) => mcg !== g && mc.matching.every((mcc) => mcc.groups.includes(mcg))
+        );
+        if (matchingGroups.length > 0) {
+          for (const mcg of matchingGroups) {
+            let cells = mcg.cells.filter((c) => !c.value && !mc.matching.includes(c));
+            let performedAction = false;
+            for (const c of cells) {
+              if (c.addNotPossibleNumbers(mc.n)) {
+                performedAction = true;
+              }
+            }
+            if (performedAction) return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  @action xWing(): boolean {
+    return false;
+  }
+
   @action stepSolveGame(): boolean {
     return false;
   }
 
   @action solveGame() {
-    let performedAction = true;
-
-    global_loop: while (!this.isSolved && performedAction) {
-      performedAction = false;
+    while (!this.isSolved) {
       // Solved square
-      for (const c of this.board) {
-        if (c.availableNumbers.length === 1) {
-          c.value = c.availableNumbers[0];
-          performedAction = true;
-          continue global_loop;
-        }
-      }
+      if (this.solvedSquare()) continue;
 
       // Hidden singles
-      for (const g of this.groups) {
-        for (const possible of POSSIBLE_VALUES) {
-          const possibleCells = g.cells.filter((c) => c.availableNumbers.includes(possible));
-          if (possibleCells.length === 1) {
-            possibleCells[0].value = possible;
-            performedAction = true;
-            continue global_loop;
-          }
-        }
-      }
+      if (this.hiddenSingle()) continue;
 
       // Naked pairs/triples/quads
-      for (const g of this.groups) {
-        let cells = g.cells.filter((c) => !c.value);
-        cells.sort((a, b) => a.availableNumbers.length - b.availableNumbers.length);
-
-        const coveredUnions = findCoveredUnions((c) => c.availableNumbers, cells);
-        for (const [union, covered] of coveredUnions) {
-          for (const c of cells) {
-            if (!covered.includes(c)) {
-              if (c.addNotPossibleNumbers(...union)) {
-                performedAction = true;
-              }
-            }
-          }
-          if (performedAction) continue global_loop;
-        }
-      }
+      if (this.nakedSets()) continue;
 
       // Hidden pairs/triples
-      for (const g of this.groups) {
-        const coveredUnions = findCoveredUnions((cl) => cl.matching, g.mappedCells);
-        for (const [union, covered] of coveredUnions) {
-          const removals = POSSIBLE_VALUES.filter((p) => !covered.find((cov) => cov.n === p));
-          for (const c of union) {
-            if (c.addNotPossibleNumbers(...removals)) {
-              performedAction = true;
-            }
-          }
-          if (performedAction) continue global_loop;
-        }
-      }
+      if (this.hiddenSets()) continue;
 
       // Pointing pairs
-      for (const g of this.groups) {
-        for (const mc of g.mappedCells) {
-          const matchingGroups = mc.matching[0].groups.filter(
-            (mcg) => mcg !== g && mc.matching.every((mcc) => mcc.groups.includes(mcg))
-          );
-          if (matchingGroups.length > 0) {
-            for (const mcg of matchingGroups) {
-              let cells = mcg.cells.filter((c) => !c.value && !mc.matching.includes(c));
-              for (const c of cells) {
-                if (c.addNotPossibleNumbers(mc.n)) {
-                  performedAction = true;
-                }
-              }
-              if (performedAction) continue global_loop;
-            }
-          }
-        }
-      }
+      if (this.pointingPairs()) continue;
+
+      // X-Wing
+      if (this.xWing()) continue;
+
+      break;
     }
   }
 
