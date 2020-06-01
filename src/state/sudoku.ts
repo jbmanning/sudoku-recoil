@@ -1,7 +1,7 @@
 import copy from "copy-to-clipboard";
 import { createContext } from "react";
 import { action, computed, observable } from "mobx";
-import * as rawGameData from "src/__data";
+import rawGameData from "src/__data";
 import { exists, readBoardFile } from "src/utils";
 import { findCoveredUnions } from "src/utils/sudoku";
 
@@ -356,6 +356,10 @@ export class SudokuStore {
     return false;
   }
 
+  @action yWing(): boolean {
+    return false;
+  }
+
   @action stepSolveGame(): boolean {
     // Solved square
     if (this.solvedSquare()) return true;
@@ -375,15 +379,18 @@ export class SudokuStore {
     // X-Wing
     if (this.xWing()) return true;
 
-    // Swordfish
-    // if (this.swordfish()) return true;
+    // Y-Wing
+    if (this.yWing()) return true;
 
     return false;
   }
 
   @action solveGame() {
     while (!this.isSolved) {
-      if (this.stepSolveGame()) continue;
+      if (this.stepSolveGame()) {
+        if (!this.isValid) return;
+        continue;
+      }
 
       break;
     }
