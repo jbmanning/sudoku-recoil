@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 export const exists = (e: any | unknown): boolean => e !== null && e !== undefined && e !== "";
-export { default as cloneDeep } from "lodash.clonedeep";
+export { default as deepclone } from "lodash.clonedeep";
 
 export const gcn = (...classNames: (string | undefined | null | false)[]) =>
   classNames.filter((cn) => !!cn).join(" ");

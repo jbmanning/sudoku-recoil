@@ -1,10 +1,8 @@
 import copy from "copy-to-clipboard";
-import * as fs from "fs";
 import { createContext } from "react";
-import { action, computed, observable, when } from "mobx";
-import { clearLine } from "readline";
+import { action, computed, observable } from "mobx";
 import * as rawGameData from "src/__data";
-import { readBoardFile } from "src/utils";
+import { exists, readBoardFile } from "src/utils";
 import { findCoveredUnions } from "src/utils/sudoku";
 
 const POSSIBLE_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -98,24 +96,31 @@ export class Group {
   @computed get availableNumbers() {
     return POSSIBLE_VALUES.filter((possible) => this.cells.every((c) => c.value !== possible));
   }
-  @computed get mappedCells() {
+  @computed get possibleToCellsMap() {
     let cells = this.cells.filter((c) => !c.value);
 
-    let mappedAvailable = cells.reduce<{ [key: number]: Cell[] }>((prev, curr) => {
+    let possibleToCellsMap = cells.reduce<{ [key: number]: Cell[] }>((prev, curr) => {
       for (const avail of curr.availableNumbers) {
         if (!prev[avail]) prev[avail] = [];
         prev[avail].push(curr);
       }
       return prev;
     }, {});
-    let mappedCells = Object.entries(mappedAvailable).map(([n, matching]) => ({
-      // Since dictionaries transform keys to strings
-      n: parseInt(n, 10),
-      matching,
-    }));
-    mappedCells.sort((a, b) => a.matching.length - b.matching.length);
 
-    return mappedCells;
+    return possibleToCellsMap;
+  }
+
+  @computed get possibleToCellsArray() {
+    let possibleToCellsArray = Object.entries(this.possibleToCellsMap).map(
+      ([n, matching]) => ({
+        // Since dictionaries transform keys to strings
+        n: parseInt(n, 10),
+        matching,
+      })
+    );
+    possibleToCellsArray.sort((a, b) => a.matching.length - b.matching.length);
+
+    return possibleToCellsArray;
   }
 }
 
@@ -178,13 +183,17 @@ export class SudokuStore {
   }
 
   @computed get isValid() {
-    return this.board.every((c) => c.isValid);
+    return this.isPossible && this.board.every((c) => c.isValid);
+  }
+
+  @computed get isPossible() {
+    return this.board.every((c) => c.value || c.availableNumbers.length > 0);
   }
 
   @action solvedSquare(): boolean {
-    for (const c of this.board) {
-      if (c.availableNumbers.length === 1) {
-        c.value = c.availableNumbers[0];
+    for (const origCell of this.board) {
+      if (origCell.availableNumbers.length === 1) {
+        origCell.value = origCell.availableNumbers[0];
         return true;
       }
     }
@@ -192,9 +201,11 @@ export class SudokuStore {
   }
 
   @action hiddenSingle(): boolean {
-    for (const g of this.groups) {
+    for (const origGroup of this.groups) {
       for (const possible of POSSIBLE_VALUES) {
-        const possibleCells = g.cells.filter((c) => c.availableNumbers.includes(possible));
+        const possibleCells = origGroup.cells.filter((c) =>
+          c.availableNumbers.includes(possible)
+        );
         if (possibleCells.length === 1) {
           possibleCells[0].value = possible;
           return true;
@@ -205,8 +216,8 @@ export class SudokuStore {
   }
 
   @action nakedSets(): boolean {
-    for (const g of this.groups) {
-      let cells = g.cells.filter((c) => !c.value);
+    for (const origGroup of this.groups) {
+      let cells = origGroup.cells.filter((c) => !c.value);
       cells.sort((a, b) => a.availableNumbers.length - b.availableNumbers.length);
 
       const coveredUnions = findCoveredUnions((c) => c.availableNumbers, cells);
@@ -226,8 +237,11 @@ export class SudokuStore {
   }
 
   @action hiddenSets(): boolean {
-    for (const g of this.groups) {
-      const coveredUnions = findCoveredUnions((cl) => cl.matching, g.mappedCells);
+    for (const origGroup of this.groups) {
+      const coveredUnions = findCoveredUnions(
+        (cl) => cl.matching,
+        origGroup.possibleToCellsArray
+      );
       for (const [union, covered] of coveredUnions) {
         const removals = POSSIBLE_VALUES.filter((p) => !covered.find((cov) => cov.n === p));
         let performedAction = false;
@@ -243,10 +257,10 @@ export class SudokuStore {
   }
 
   @action pointingPairs(): boolean {
-    for (const g of this.groups) {
-      for (const mc of g.mappedCells) {
+    for (const origGroup of this.groups) {
+      for (const mc of origGroup.possibleToCellsArray) {
         const matchingGroups = mc.matching[0].groups.filter(
-          (mcg) => mcg !== g && mc.matching.every((mcc) => mcc.groups.includes(mcg))
+          (mcg) => mcg !== origGroup && mc.matching.every((mcc) => mcc.groups.includes(mcg))
         );
         if (matchingGroups.length > 0) {
           for (const mcg of matchingGroups) {
@@ -266,39 +280,121 @@ export class SudokuStore {
   }
 
   @action xWing(): boolean {
+    for (const origPossible of POSSIBLE_VALUES) {
+      const candidates = this.groups.filter(
+        (g) => g.possibleToCellsMap[origPossible]?.length === 2
+      );
+
+      if (candidates.length >= 2) {
+        const typeToCandidatesMap = candidates.reduce<{ [key: string]: Group[] }>(
+          (prev, curr) => {
+            if (!prev[curr.type]) prev[curr.type] = [];
+            prev[curr.type].push(curr);
+            return prev;
+          },
+          {}
+        );
+        for (const [type, candidateList] of Object.entries(typeToCandidatesMap)) {
+          if (candidateList.length >= 2) {
+            for (let i = 0; i < candidateList.length; i += 1) {
+              const groupCandidateI = candidateList[i];
+              const candidateIPossibleCells = groupCandidateI.possibleToCellsMap[origPossible];
+
+              for (let j = i + 1; j < candidateList.length; j += 1) {
+                const groupCandidateJ = candidateList[j];
+                const candidateJPossibleCells =
+                  groupCandidateJ.possibleToCellsMap[origPossible];
+
+                let zeroMatchIndex: number | undefined;
+                let zeroMatch: Group | undefined;
+                for (let matchIndex = 0; matchIndex < 2; matchIndex += 1) {
+                  const match = candidateIPossibleCells[0].groups.find(
+                    (g) =>
+                      g !== groupCandidateI &&
+                      g !== groupCandidateJ &&
+                      g.type !== type &&
+                      candidateJPossibleCells[matchIndex].groups.includes(g)
+                  );
+
+                  if (match) {
+                    zeroMatchIndex = matchIndex;
+                    zeroMatch = match;
+                    break;
+                  }
+                }
+
+                if (!exists(zeroMatch) || !exists(zeroMatchIndex)) continue;
+                const oneMatch = candidateIPossibleCells[1].groups.find(
+                  (g) =>
+                    g !== groupCandidateI &&
+                    g !== groupCandidateJ &&
+                    g.type !== type &&
+                    candidateJPossibleCells[zeroMatchIndex === 0 ? 1 : 0].groups.includes(g)
+                );
+                if (zeroMatch && oneMatch) {
+                  const matchedCells = [...zeroMatch.cells, ...oneMatch.cells];
+                  let performedAction;
+                  for (const c of matchedCells) {
+                    if (
+                      !groupCandidateI.cells.includes(c) &&
+                      !groupCandidateJ.cells.includes(c) &&
+                      c.availableNumbers.includes(origPossible)
+                    ) {
+                      c.addNotPossibleNumbers(origPossible);
+                      performedAction = true;
+                    }
+                  }
+
+                  if (performedAction) return true;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
     return false;
   }
 
   @action stepSolveGame(): boolean {
+    // Solved square
+    if (this.solvedSquare()) return true;
+
+    // Hidden singles
+    if (this.hiddenSingle()) return true;
+
+    // Naked pairs/triples/quads
+    if (this.nakedSets()) return true;
+
+    // Hidden pairs/triples
+    if (this.hiddenSets()) return true;
+
+    // Pointing pairs
+    if (this.pointingPairs()) return true;
+
+    // X-Wing
+    if (this.xWing()) return true;
+
+    // Swordfish
+    // if (this.swordfish()) return true;
+
     return false;
   }
 
   @action solveGame() {
     while (!this.isSolved) {
-      // Solved square
-      if (this.solvedSquare()) continue;
-
-      // Hidden singles
-      if (this.hiddenSingle()) continue;
-
-      // Naked pairs/triples/quads
-      if (this.nakedSets()) continue;
-
-      // Hidden pairs/triples
-      if (this.hiddenSets()) continue;
-
-      // Pointing pairs
-      if (this.pointingPairs()) continue;
-
-      // X-Wing
-      if (this.xWing()) continue;
+      if (this.stepSolveGame()) continue;
 
       break;
     }
   }
 
+  toString() {
+    return this.board.map((c) => c.value || 0).join("");
+  }
+
   copyToClipboard() {
-    copy(this.board.map((c) => c.value || 0).join(""));
+    copy(this.toString());
   }
 
   @action resetToStart() {

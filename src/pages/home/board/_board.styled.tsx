@@ -1,6 +1,9 @@
 import styled from "styled-components";
 import { Cell as CellObj, SudokuStore } from "src/state/sudoku";
 
+const getBorderColor = ({ game }: { game?: SudokuStore }) =>
+  game?.isSolved ? "var(--green-6)" : !game?.isValid ? "var(--red-6)" : "var(--grey-9)";
+
 export const Board = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
@@ -29,27 +32,19 @@ export const BoardCell = styled.div<IBoardCellProps>`
   }
 
   &:nth-child(3n - 0) {
-    border-right: 3px solid
-      ${({ game }) =>
-        game?.isSolved ? "var(--green-6)" : !game?.isValid ? "var(--red-6)" : "var(--grey-9)"};
+    border-right: 3px solid ${getBorderColor};
   }
   &:nth-child(9n - 8) {
-    border-left: 3px solid
-      ${({ game }) =>
-        game?.isSolved ? "var(--green-6)" : !game?.isValid ? "var(--red-6)" : "var(--grey-9)"};
+    border-left: 3px solid ${getBorderColor};
   }
 
   &:nth-last-child(-n + 9) {
-    border-bottom: 3px solid
-      ${({ game }) =>
-        game?.isSolved ? "var(--green-6)" : !game?.isValid ? "var(--red-6)" : "var(--grey-9)"};
+    border-bottom: 3px solid ${getBorderColor};
   }
   &:nth-child(-n + 9),
   &:nth-child(n + 28):nth-child(-n + 36),
   &:nth-child(n + 55):nth-child(-n + 63) {
-    border-top: 3px solid
-      ${({ game }) =>
-        game?.isSolved ? "var(--green-6)" : !game?.isValid ? "var(--red-6)" : "var(--grey-9)"};
+    border-top: 3px solid ${getBorderColor};
   }
 `;
 
