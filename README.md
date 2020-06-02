@@ -31,8 +31,9 @@ TODO: Implementation
 TODO: Implementation
 
 #### Trial-and-error
-TODO: Implementation
 In the circumstance that all other algorithms fail to generate new leads, find the cell with the fewest possible candidates and make a guess. Proceed with solving the puzzle with standard algorithms until the puzzle is invalid OR solved. If invalid, backtrack to the guessed cell and eliminate the guessed value from its candidates. This technique may need to be recursed, so sufficient state recording will be required. 
+
+TODO: Implementation
 
 
 ## Future goals
