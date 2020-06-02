@@ -1,9 +1,9 @@
 # Sudoku
 This project is an algorithm based solver for sudoku puzzles. In it's current state 
-it will solve many simple-hard puzzles, but begins to struggle with some puzzles requiring more complex techniques. My motivation for implementation has been simply as a learning project to get better at studying and implementing various algorithms.
+it will solve many simple-hard puzzles, but begins to struggle with some puzzles requiring more complex techniques. My motivation for implementation has been simply as a learning project to get better at studying and implementing various algorithms. 
 
 ## Techniques
-Throughout development I have studied through various sources to find some of the most common techniques to solving puzzles, with my primary source of ideas being [SudokuWiki](https://www.sudokuwiki.org/sudoku.htm). Currently I employ no brute force or trial-and-error methods so if this codebase does not have a technique to surpass a step the puzzle will simply stop being solved at that point, leaving the user with a partially solved puzzle with the available numbers filtered down. 
+Throughout development I have studied through various sources to find some of the most common techniques to solving puzzles with my primary source of ideas being [SudokuWiki](https://www.sudokuwiki.org/sudoku.htm). Currently I employ no brute force or trial-and-error methods so if this codebase does not have a technique to surpass a step the puzzle will simply stop being solved at that point, leaving the user with a partially solved puzzle with the available numbers filtered down. 
 
 ### List of techniques
 #### Naked Single 
@@ -37,10 +37,10 @@ TODO: Implementation
 
 
 ## Future goals
+* Introduce way to import amd save boards/games
 * Finish documentation
 * Introduce a game history to show users the reasons certain candidates were eliminated, and the list of actions that were performed
 * improve UI to indicate candidates have been eliminated
 * re-introduce a user friendly way to actually play the game. Currently it is only for solving automatically
-* Introduce way to import amd save boards/games
 * Add unit testing to techniques
 * Move to Mobx-State-Tree to streamline backtracking using snapshots
