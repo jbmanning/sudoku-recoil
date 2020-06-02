@@ -63,7 +63,7 @@ export const GameCell = styled.div<CellProps>`
 
   color: ${({ cell }) => {
     if (cell && !cell.isValid) return "red";
-    else if (cell && cell.isStatic) return "var(--grey-4)";
+    else if (cell && cell.isStatic) return "var(--grey-5)";
     return;
   }};
   font-size: ${({ cell }) => cell && cell.value === undefined && ".25em"};

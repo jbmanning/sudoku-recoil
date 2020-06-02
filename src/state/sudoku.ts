@@ -414,13 +414,15 @@ export class SudokuStore {
 class GameStore {
   @observable currentGame?: SudokuStore;
   constructor() {
-    const game = this.knownGames.find((kg) => kg.name === "pointingPairs");
+    const game = this.knownGames.find((kg) => kg.name === "nyt5_18");
     if (game) this.startGame(game.name, game.val);
   }
 
   @action startGame(name: string, data: number[]) {
     this.currentGame = new SudokuStore(name, data);
-    this.currentGame.solveGame();
+    if (process.env.NODE_ENV === "development") {
+      this.currentGame.solveGame();
+    }
   }
 
   @computed get knownGames() {
