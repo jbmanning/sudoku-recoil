@@ -1,44 +1,45 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Sudoku
+This project is an algorithm based solver for sudoku puzzles. In it's current state 
+it will solve many simple-hard puzzles, but begins to struggle with some puzzles requiring more complex techniques. My motivation for implementation has been simply as a learning project to get better at studying and implementing various algorithms.
 
-## Available Scripts
+## Techniques
+Throughout development I have studied through various sources to find some of the most common techniques to solving puzzles, with my primary source of ideas being [SudokuWiki](https://www.sudokuwiki.org/sudoku.htm). Currently I employ no brute force or trial-and-error methods so if this codebase does not have a technique to surpass a step the puzzle will simply stop being solved at that point, leaving the user with a partially solved puzzle with the available numbers filtered down. 
 
-In the project directory, you can run:
+### List of techniques
+#### Naked Single 
+A cell with only one candidate
 
-### `npm start`
+#### Hidden Single
+A cell who within one of its containing groups (row, column, box) only has one possible value.
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+#### Naked Sets
+A set of two, three, or four cells within a group which contain an intersection of the same two, three, or four candidates. This means those candidates must be eventually placed in that set of cells and can be removed from all other cells in said group. 
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+#### Hidden Sets
+A set of two, three, or four cells within a group which are the only cells within said group that contain an intersection of two, three, or four candidates. This means that those candidates must be eventually placed within that set of cells, and all non-intersection candidates can be removed from each cell within the set.
 
-### `npm test`
+#### Pointing Pairs
+TODO: Documentation
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+#### X-Wing
+TODO: Documentation
 
-### `npm run build`
+#### Y-Wing
+TODO: Implementation
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+#### Swordfish
+TODO: Implementation
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+#### Trial-and-error
+TODO: Implementation
+In the circumstance that all other algorithms fail to generate new leads, find the cell with the fewest possible candidates and make a guess. Proceed with solving the puzzle with standard algorithms until the puzzle is invalid OR solved. If invalid, backtrack to the guessed cell and eliminate the guessed value from its candidates. This technique may need to be recursed, so sufficient state recording will be required. 
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Future goals
+* Finish documentation
+* Introduce a game history to show users the reasons certain candidates were eliminated, and the list of actions that were performed
+* improve UI to indicate candidates have been eliminated
+* re-introduce a user friendly way to actually play the game. Currently it is only for solving automatically
+* Introduce way to import amd save boards/games
+* Add unit testing to techniques
+* Move to Mobx-State-Tree to streamline backtracking using snapshots
