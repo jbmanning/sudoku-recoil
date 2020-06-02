@@ -1,5 +1,5 @@
 # Sudoku
-This project is an algorithm based solver for sudoku puzzles. In it's current state 
+This project is an algorithm based solver for sudoku puzzles. In its current state 
 it will solve many simple-hard puzzles, but begins to struggle with some puzzles requiring more complex techniques. My motivation for implementation has been simply as a learning project to get better at studying and implementing various algorithms. 
 
 ## Techniques
