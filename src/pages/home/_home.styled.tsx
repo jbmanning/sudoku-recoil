@@ -1,7 +1,7 @@
 import styled from "styled-components";
 
 export const Wrapper = styled.div`
-  background-color: var(--grey-3);
+  background-color: var(--grey-1);
   color: var(--grey-9);
   font-family: Montserrat, serif;
 
