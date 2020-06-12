@@ -357,6 +357,22 @@ export class SudokuStore {
   }
 
   @action yWing(): boolean {
+    const openCells = this.board.filter((c) => !c.value);
+    for (const abCell of openCells) {
+      if (abCell.availableNumbers.length === 2) {
+        for (const abGroup of abCell.groups) {
+          for (const abSiblingCell of abGroup.cells) {
+          }
+        }
+        const abCellSiblings = abCell.groups.reduce<Set<Cell>>((prev, curr) => {
+          curr.cells.forEach((c) => prev.add(c));
+          return prev;
+        }, new Set());
+
+        for (const sibling of abCellSiblings) {
+        }
+      }
+    }
     return false;
   }
 

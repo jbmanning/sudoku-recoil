@@ -13,3 +13,16 @@ body {
   clip: rect(0, 0, 0, 0);
   border: 0;
 }
+
+#no-mobile {
+  display: none;
+}
+
+@media (max-width: 940px) {
+  #root {
+    display: none;
+  }
+  #no-mobile {
+    display: block;
+  }
+}
