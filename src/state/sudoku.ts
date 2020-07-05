@@ -360,16 +360,54 @@ export class SudokuStore {
     const openCells = this.board.filter((c) => !c.value);
     for (const abCell of openCells) {
       if (abCell.availableNumbers.length === 2) {
-        for (const abGroup of abCell.groups) {
-          for (const abSiblingCell of abGroup.cells) {
-          }
-        }
-        const abCellSiblings = abCell.groups.reduce<Set<Cell>>((prev, curr) => {
-          curr.cells.forEach((c) => prev.add(c));
-          return prev;
-        }, new Set());
+        for (const bcGroup of abCell.groups) {
+          const bcPossibles = bcGroup.cells.filter(
+            (c) =>
+              c !== abCell &&
+              c.availableNumbers.length === 2 &&
+              abCell.groups.filter((g) => c.groups.includes(g)).length === 1
+          );
 
-        for (const sibling of abCellSiblings) {
+          for (const bcCell of bcPossibles) {
+            let abbcIntersection = abCell.availableNumbers.filter((c) =>
+              bcCell.availableNumbers.includes(c)
+            );
+            if (abbcIntersection.length !== 1) continue;
+            let bCandidate = abbcIntersection[0];
+            let aCandidate = abCell.availableNumbers.find((c) => c !== bCandidate) ?? -1;
+            let cCandidate = bcCell.availableNumbers.find((c) => c !== bCandidate) ?? -1;
+            if (aCandidate === -1) throw new Error("A undefined in yWing");
+            if (cCandidate === -1) throw new Error("C undefined in yWing");
+
+            for (const acGroup of abCell.groups.filter((g) => g !== bcGroup)) {
+              const acPossibles = acGroup.cells.filter(
+                (c) =>
+                  c !== abCell &&
+                  c.availableNumbers.length === 2 &&
+                  abCell.groups.filter((g) => c.groups.includes(g)).length === 1 &&
+                  c.availableNumbers.includes(aCandidate) &&
+                  c.availableNumbers.includes(cCandidate)
+              );
+
+              for (const acCell of acPossibles) {
+                const cGroups = [...acCell.groups, ...abCell.groups].filter(
+                  (g) => g !== acGroup && g !== bcGroup && !abCell.groups.includes(g)
+                );
+                for (const cGroup of cGroups) {
+                  for (const cCell of cGroup.cells) {
+                    if (
+                      cCell.availableNumbers.includes(cCandidate) &&
+                      acCell.groups.find((abCellGroup) => abCellGroup.cells.includes(cCell)) &&
+                      bcCell.groups.find((bcCellGroup) => bcCellGroup.cells.includes(cCell))
+                    ) {
+                      cCell.addNotPossibleNumbers(cCandidate);
+                      return true;
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -392,7 +430,7 @@ export class SudokuStore {
     // Pointing pairs
     if (this.pointingPairs()) return true;
 
-    // X-Wing
+    // X-Wing (Superset of box line reduction/intersection removal)
     if (this.xWing()) return true;
 
     // Y-Wing
@@ -430,7 +468,11 @@ export class SudokuStore {
 class GameStore {
   @observable currentGame?: SudokuStore;
   constructor() {
-    const game = this.knownGames.find((kg) => kg.name === "nyt5_18");
+    let gameId = "nyt5_18";
+    if (process.env.NODE_ENV === "development") {
+      gameId = "yWing";
+    }
+    const game = this.knownGames.find((kg) => kg.name === gameId);
     if (game) this.startGame(game.name, game.val);
   }
 
