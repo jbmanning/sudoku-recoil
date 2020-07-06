@@ -468,9 +468,9 @@ export class SudokuStore {
 class GameStore {
   @observable currentGame?: SudokuStore;
   constructor() {
-    let gameId = "nyt5_18";
+    let gameId = "yWing";
     if (process.env.NODE_ENV === "development") {
-      gameId = "yWing";
+      gameId = "underUsed";
     }
     const game = this.knownGames.find((kg) => kg.name === gameId);
     if (game) this.startGame(game.name, game.val);
