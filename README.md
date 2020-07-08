@@ -25,7 +25,7 @@ TODO: Documentation
 TODO: Documentation
 
 #### Y-Wing
-TODO: Implementation
+TODO: Documentation
 
 #### Swordfish
 TODO: Implementation
