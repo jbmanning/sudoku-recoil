@@ -1,18 +1,18 @@
 import { observer } from "mobx-react-lite";
-import React, { useCallback, useContext, useRef, useState } from "react";
-import { GameContext, SudokuStore } from "src/state/sudoku";
+import React, { useCallback, useContext, useMemo, useRef, useState } from "react";
+import { Cell, GameContext, Game } from "src/state/sudoku";
 import * as S from "./_board.styled";
 import { useKeyDown, useOutsideClick } from "src/utils/hooks";
+import { gcn } from "src/utils";
 
 type IBoardProps = {
-  game?: SudokuStore;
+  game: Game;
 };
 
 const Board = observer<IBoardProps>(({ game }) => {
   const boardRef = useRef<HTMLDivElement>(null);
   const [x, setX] = useState(-1);
   const [y, setY] = useState(-1);
-  const [rawBoard, _] = useState([...new Array(81)]);
 
   const cellClick = (x: number, y: number) => () => {
     setX(x);
@@ -51,21 +51,27 @@ const Board = observer<IBoardProps>(({ game }) => {
   ]);
 
   return (
-    <S.Board ref={boardRef}>
-      {rawBoard.map((_, i) => (
-        <S.BoardCell key={`${i}`} game={game}>
-          {game && (
+    <S.Board ref={boardRef} game={game}>
+      {Array.from(Array(game.size + 1).keys()).map((i) => (
+        <S.CellSquare key={`column_${i}`}>{i === 0 ? undefined : i}</S.CellSquare>
+      ))}
+      {game.cells.map((c, i) => (
+        <React.Fragment key={`invisGroup_${i}`}>
+          {c.colNumber % game.size === 0 ? (
+            <S.CellSquare key={`row_${c.rowNumber}`}>
+              {String.fromCharCode(65 + c.rowNumber)}
+            </S.CellSquare>
+          ) : undefined}
+
+          <S.CellSquare key={`cell_${i}`}>
             <S.GameCell
-              cell={game.board[i]}
+              game={game}
+              cell={c}
               isFocused={false}
               // onClick={cellClick(colJ, rowI)}
-            >
-              {game.board[i].value !== undefined
-                ? game.board[i].value
-                : game.board[i].availableNumbers.join("")}
-            </S.GameCell>
-          )}
-        </S.BoardCell>
+            />
+          </S.CellSquare>
+        </React.Fragment>
       ))}
     </S.Board>
   );

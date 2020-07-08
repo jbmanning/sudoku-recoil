@@ -39,3 +39,8 @@ export const readBoardFile = (data: any): number[] => {
     throw new Error(`Unknown file type: ${typeof data}`);
   }
 };
+
+export const range = (start: number, end?: number) =>
+  end === undefined
+    ? Array.from({ length: start }, (v, k) => k)
+    : Array.from({ length: end - start }, (v, k) => k + start);

@@ -2,46 +2,51 @@ import copy from "copy-to-clipboard";
 import { createContext } from "react";
 import { action, computed, observable } from "mobx";
 import rawGameData from "src/__data";
-import { exists, readBoardFile } from "src/utils";
+import { exists, range, readBoardFile } from "src/utils";
 import { findCoveredUnions } from "src/utils/sudoku";
 
-const POSSIBLE_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+export enum ValueSource {
+  InitialGame,
+  ComputerSolved,
+  UserEntry,
+}
 
 export class Cell {
-  @observable readonly game: SudokuStore;
-  @observable readonly i: number;
-  @observable private _value: number | undefined;
-  @observable readonly isStatic: boolean;
+  @observable private readonly _game: Game;
+  @observable private __value: number | undefined;
+  @observable readonly index: number;
+  @observable source?: ValueSource;
   @observable groups: Group[] = [];
   @observable notPossibleValues: Set<number> = new Set();
-  constructor(game: SudokuStore, value: number, i: number) {
-    this.game = game;
-    this.i = i;
-    if (value === 0) {
-      this.value = undefined;
-      this.isStatic = false;
-    } else {
-      this.value = value;
-      this.isStatic = true;
-    }
+
+  constructor(game: Game, value: number, i: number) {
+    this._game = game;
+    this.index = i;
+    this.setValue(value, ValueSource.InitialGame);
   }
 
   get value() {
-    return this._value;
+    return this.__value;
   }
-  set value(v: number | undefined) {
-    if (this.isStatic) throw new Error("Can not set value of static cell.");
-    else {
-      this.game.hasUserInput = true;
-      if (v === 0) this._value = undefined;
-      else this._value = v;
+
+  @action setValue(v: number | undefined, source: ValueSource) {
+    if (this.source === ValueSource.InitialGame) {
+      throw new Error("Can not set value of static cell.");
+    } else {
+      if (v === 0 || v === undefined) this.__value = undefined;
+      else {
+        this.__value = v;
+        this.source = source;
+      }
     }
   }
+
   @action addGroup(group: Group) {
     this.groups.push(group);
   }
+
   @action addNotPossibleNumbers(...nums: number[]) {
-    if (this.isStatic) return false;
+    if (this.source) return false;
     let modified = false;
     for (const n of nums) {
       if (!this.notPossibleValues.has(n) && this.availableNumbers.includes(n)) {
@@ -51,9 +56,10 @@ export class Cell {
     }
     return modified;
   }
+
   @action reset() {
-    if (!this.isStatic) {
-      this.value = undefined;
+    if (this.source !== ValueSource.InitialGame) {
+      this.setValue(undefined, ValueSource.ComputerSolved);
       this.notPossibleValues = new Set();
     }
   }
@@ -63,7 +69,7 @@ export class Cell {
    */
   @computed get availableNumbers() {
     if (this.value !== undefined) return [];
-    return POSSIBLE_VALUES.filter(
+    return this._game.possibleValues.filter(
       (possible) =>
         !this.notPossibleValues.has(possible) &&
         this.groups.every((g) => g.availableNumbers.includes(possible))
@@ -79,23 +85,34 @@ export class Cell {
       this.groups.every((g) => g.cells.every((c) => c === this || c.value !== this.value))
     );
   }
+
+  @computed get rowNumber() {
+    return Math.floor(this.index / this._game.size);
+  }
+
+  @computed get colNumber() {
+    return this.index % this._game.size;
+  }
 }
 
 export class Group {
-  @observable game: SudokuStore;
+  @observable private readonly _game: Game;
   @observable type: string;
 
   @observable cells: Cell[];
-  constructor(game: SudokuStore, type: string, cells: Cell[]) {
+  constructor(game: Game, type: string, cells: Cell[]) {
     this.type = type;
-    this.game = game;
+    this._game = game;
     if (cells.length !== 9) console.warn(`Invalid group size, should be 9... ${type}`);
     this.cells = cells;
   }
 
   @computed get availableNumbers() {
-    return POSSIBLE_VALUES.filter((possible) => this.cells.every((c) => c.value !== possible));
+    return this._game.possibleValues.filter((possible) =>
+      this.cells.every((c) => c.value !== possible)
+    );
   }
+
   @computed get possibleToCellsMap() {
     let cells = this.cells.filter((c) => !c.value);
 
@@ -124,31 +141,32 @@ export class Group {
   }
 }
 
-export class SudokuStore {
+export class Game {
   @observable name: string;
-  @observable hasUserInput: boolean = false;
+  @observable readonly: boolean;
   @observable actions: string[] = [];
-  @observable board: Cell[] = new Array(81);
+  @observable cells: Cell[] = new Array(81);
   @observable rows: Group[] = new Array(9);
   @observable cols: Group[] = new Array(9);
   @observable boxes: Group[] = new Array(9);
 
-  constructor(name: string, initial: number[]) {
+  constructor(name: string, initial: number[], readonly: boolean = false) {
     this.name = name;
+    this.readonly = readonly;
     if (initial.length !== 81) {
       console.warn("Invalid board size, should be 9x9");
     }
 
     for (let i = 0; i < initial.length; i += 1) {
-      this.board[i] = new Cell(this, initial[i], i);
+      this.cells[i] = new Cell(this, initial[i], i);
     }
 
     for (let i = 0; i < 9; i += 1) {
-      const colCells = this.board.filter((cell, j) => j % 9 === i);
+      const colCells = this.cells.filter((cell, j) => j % 9 === i);
       this.cols[i] = new Group(this, "column", colCells);
       colCells.forEach((c) => c.addGroup(this.cols[i]));
 
-      const rowCells = this.board.slice(i * 9, i * 9 + 9);
+      const rowCells = this.cells.slice(i * 9, i * 9 + 9);
       this.rows[i] = new Group(this, "row", rowCells);
       rowCells.forEach((c) => c.addGroup(this.rows[i]));
     }
@@ -162,7 +180,7 @@ export class SudokuStore {
         const cells = [];
         for (let boxY = topLeftY; boxY < topLeftY + 3; boxY += 1) {
           for (let boxX = topLeftX; boxX < topLeftX + 3; boxX += 1) {
-            cells.push(this.board[boxY * 9 + boxX]);
+            cells.push(this.cells[boxY * 9 + boxX]);
           }
         }
 
@@ -174,26 +192,46 @@ export class SudokuStore {
     }
   }
 
+  @computed get size() {
+    return Math.sqrt(this.cells.length);
+  }
+
+  @computed get squareSize() {
+    return Math.sqrt(this.size);
+  }
+
+  @computed get possibleValues() {
+    return range(1, this.size + 1);
+  }
+
   @computed get groups() {
     return [...this.boxes, ...this.cols, ...this.rows];
   }
 
   @computed get isSolved() {
-    return this.board.every((c) => c.value && c.isValid);
+    return this.cells.every((c) => c.value && c.isValid);
   }
 
   @computed get isValid() {
-    return this.isPossible && this.board.every((c) => c.isValid);
+    return this.isPossible && this.cells.every((c) => c.isValid);
   }
 
   @computed get isPossible() {
-    return this.board.every((c) => c.value || c.availableNumbers.length > 0);
+    return this.cells.every((c) => c.value || c.availableNumbers.length > 0);
+  }
+
+  @computed get isValidGame() {
+    return this.size % 1 === 0;
+  }
+
+  @computed get isEmptyGame() {
+    return this.cells.filter((c) => c.value !== undefined).length === 0;
   }
 
   @action solvedSquare(): boolean {
-    for (const origCell of this.board) {
+    for (const origCell of this.cells) {
       if (origCell.availableNumbers.length === 1) {
-        origCell.value = origCell.availableNumbers[0];
+        origCell.setValue(origCell.availableNumbers[0], ValueSource.ComputerSolved);
         return true;
       }
     }
@@ -202,12 +240,12 @@ export class SudokuStore {
 
   @action hiddenSingle(): boolean {
     for (const origGroup of this.groups) {
-      for (const possible of POSSIBLE_VALUES) {
+      for (const possible of this.possibleValues) {
         const possibleCells = origGroup.cells.filter((c) =>
           c.availableNumbers.includes(possible)
         );
         if (possibleCells.length === 1) {
-          possibleCells[0].value = possible;
+          possibleCells[0].setValue(possible, ValueSource.ComputerSolved);
           return true;
         }
       }
@@ -243,7 +281,9 @@ export class SudokuStore {
         origGroup.possibleToCellsArray
       );
       for (const [union, covered] of coveredUnions) {
-        const removals = POSSIBLE_VALUES.filter((p) => !covered.find((cov) => cov.n === p));
+        const removals = this.possibleValues.filter(
+          (p) => !covered.find((cov) => cov.n === p)
+        );
         let performedAction = false;
         for (const c of union) {
           if (c.addNotPossibleNumbers(...removals)) {
@@ -280,7 +320,7 @@ export class SudokuStore {
   }
 
   @action xWing(): boolean {
-    for (const origPossible of POSSIBLE_VALUES) {
+    for (const origPossible of this.possibleValues) {
       const candidates = this.groups.filter(
         (g) => g.possibleToCellsMap[origPossible]?.length === 2
       );
@@ -357,7 +397,7 @@ export class SudokuStore {
   }
 
   @action yWing(): boolean {
-    const openCells = this.board.filter((c) => !c.value);
+    const openCells = this.cells.filter((c) => !c.value);
     for (const abCell of openCells) {
       if (abCell.availableNumbers.length === 2) {
         for (const bcGroup of abCell.groups) {
@@ -414,6 +454,10 @@ export class SudokuStore {
     return false;
   }
 
+  @action swordfish(): boolean {
+    return false;
+  }
+
   @action stepSolveGame(): boolean {
     // Solved square
     if (this.solvedSquare()) return true;
@@ -436,6 +480,9 @@ export class SudokuStore {
     // Y-Wing
     if (this.yWing()) return true;
 
+    // TODO: Swordfish
+    // if (this.swordfish()) return true;
+
     return false;
   }
 
@@ -451,7 +498,7 @@ export class SudokuStore {
   }
 
   toString() {
-    return this.board.map((c) => c.value || 0).join("");
+    return this.cells.map((c) => c.value || 0).join("");
   }
 
   copyToClipboard() {
@@ -459,35 +506,48 @@ export class SudokuStore {
   }
 
   @action resetToStart() {
-    this.board.forEach((c) => {
+    this.cells.forEach((c) => {
       c.reset();
     });
   }
 }
 
-class GameStore {
-  @observable currentGame?: SudokuStore;
+class SudokuStore {
+  @observable private _currentGame?: Game;
+  private static emptyGame: Game = new Game(
+    "empty game",
+    Array.from(Array(81), () => 0),
+    true
+  );
+
   constructor() {
     let gameId = "yWing";
     if (process.env.NODE_ENV === "development") {
       gameId = "underUsed";
+      const game = this.knownGames.find((kg) => kg.name === gameId);
+      if (game) this.startGame(game.name, game.val);
     }
-    const game = this.knownGames.find((kg) => kg.name === gameId);
-    if (game) this.startGame(game.name, game.val);
   }
 
   @action startGame(name: string, data: number[]) {
-    this.currentGame = new SudokuStore(name, data);
+    this._currentGame = new Game(name, data);
     if (process.env.NODE_ENV === "development") {
-      this.currentGame.solveGame();
+      this._currentGame.solveGame();
     }
   }
 
   @computed get knownGames() {
     return Object.entries(rawGameData).map(([k, v]) => ({ name: k, val: readBoardFile(v) }));
   }
+
+  @computed get currentGame(): Game {
+    if (this._currentGame && !this._currentGame.isValidGame) {
+      alert("Current game does not seem to be valid");
+    }
+    return this._currentGame || SudokuStore.emptyGame;
+  }
 }
 
-const gameStore = new GameStore();
+const gameStore = new SudokuStore();
 
 export const GameContext = createContext(gameStore);
