@@ -90,8 +90,16 @@ export class Cell {
     return Math.floor(this.index / this._game.size);
   }
 
+  @computed get rowName() {
+    return String.fromCharCode(65 + this.rowNumber);
+  }
+
   @computed get colNumber() {
     return this.index % this._game.size;
+  }
+
+  @computed get colName() {
+    return `${this.colNumber + 1}`;
   }
 }
 

@@ -18,7 +18,6 @@ export const Board = styled.div<BoardProps>`
   display: grid;
   grid-template-rows: repeat(${({ game }) => game.size + 1}, 1fr);
   grid-template-columns: repeat(${({ game }) => game.size + 1}, 1fr);
-  font-size: 3em;
 `;
 
 export const CellSquare = styled.div`
@@ -40,8 +39,8 @@ const StyledGameCell = styled.div<GameCellProps>`
   width: 100%;
   height: 100%;
   display: flex;
-  justify-content: ${({ cell }) => cell && cell.value && "center"};
-  align-items: ${({ cell }) => cell && cell.value && "center"};
+  justify-content: ${({ cell }) => cell.value && "center"};
+  align-items: ${({ cell }) => cell.value && "center"};
 
   color: ${({ cell }) => {
     if (!cell.isValid) return tailwindConfig.theme.colors.red[700];
@@ -50,7 +49,7 @@ const StyledGameCell = styled.div<GameCellProps>`
     return;
   }};
 
-  font-size: ${({ cell }) => cell && cell.value === undefined && ".25em"};
+  font-size: ${({ cell }) => (cell.value !== undefined ? "3em" : ".75em")};
   background: ${({ isFocused }) => isFocused && "var(--blue-3)"};
 
   ${({ cell, game }) => {
