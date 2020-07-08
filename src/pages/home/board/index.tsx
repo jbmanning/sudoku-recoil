@@ -54,12 +54,16 @@ const Board = observer<IBoardProps>(({ game }) => {
     <S.Board ref={boardRef} game={game}>
       <S.CellSquare />
       {game.cells.slice(0, game.size).map((c) => (
-        <S.CellSquare key={`column_${c.colName}`}>{c.colName}</S.CellSquare>
+        <S.CellSquare key={`column_${c.colName}`} isColLabel>
+          {c.colName}
+        </S.CellSquare>
       ))}
       {game.cells.map((c, i) => (
         <React.Fragment key={`invisGroup_${i}`}>
           {c.colNumber % game.size === 0 ? (
-            <S.CellSquare key={`row_${c.rowName}`}>{c.rowName}</S.CellSquare>
+            <S.CellSquare key={`row_${c.rowName}`} isRowLabel>
+              {c.rowName}
+            </S.CellSquare>
           ) : undefined}
 
           <S.CellSquare key={`cell_${i}`}>

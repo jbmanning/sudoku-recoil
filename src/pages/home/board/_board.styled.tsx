@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import tailwindConfig, { tailwindTheme } from "src/styles/tailwind";
 import { Cell as CellObj, Game, ValueSource } from "src/state/sudoku";
+import { observer } from "mobx-react-lite";
 
 const getBorderColor = ({ game }: { game: Game }) =>
   game.isSolved
@@ -20,12 +21,19 @@ export const Board = styled.div<BoardProps>`
   grid-template-columns: repeat(${({ game }) => game.size + 1}, 1fr);
 `;
 
-export const CellSquare = styled.div`
+type CellSquareProps = {
+  isColLabel?: boolean;
+  isRowLabel?: boolean;
+};
+
+export const CellSquare = styled.div<CellSquareProps>`
   width: 75px;
   height: 75px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: ${({ isColLabel }) => (isColLabel ? "flex-end" : "center")};
+  justify-content: ${({ isRowLabel }) => (isRowLabel ? "flex-end" : "center")};
+  padding: ${({ isColLabel, isRowLabel }) => (isColLabel || isRowLabel) && "8px"};
+  line-height: 1;
 `;
 
 type GameCellProps = {
@@ -38,9 +46,22 @@ const StyledGameCell = styled.div<GameCellProps>`
   padding: 2px;
   width: 100%;
   height: 100%;
-  display: flex;
-  justify-content: ${({ cell }) => cell.value && "center"};
-  align-items: ${({ cell }) => cell.value && "center"};
+
+  ${({ cell, game }) => {
+    const out: string[] = [];
+
+    if (cell.value) {
+      out.push(`display: flex;`);
+      out.push(`justify-content: center;`);
+      out.push(`align-items: center;`);
+    } else {
+      out.push(`display: grid;`);
+      out.push(`grid-template-rows: repeat(${game.squareSize}, minmax(0, 1fr));`);
+      out.push(`grid-template-columns: repeat(${game.squareSize}, minmax(0, 1fr));`);
+    }
+
+    return out;
+  }};
 
   color: ${({ cell }) => {
     if (!cell.isValid) return tailwindConfig.theme.colors.red[700];
@@ -84,14 +105,22 @@ const StyledGameCell = styled.div<GameCellProps>`
   }};
 `;
 
-export const GameCell = ({ game, cell, isFocused }: GameCellProps) => {
+export const AvailableNumber = styled.div`
+  padding: 1px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+export const GameCell = observer(({ game, cell, isFocused }: GameCellProps) => {
   return (
     <StyledGameCell game={game} cell={cell} isFocused={isFocused}>
       {cell.value !== undefined
         ? cell.value
         : game.isEmptyGame
         ? undefined
-        : cell.availableNumbers.join("")}
+        : cell.availableNumbers.map((a) => <AvailableNumber key={a}>{a}</AvailableNumber>)}
     </StyledGameCell>
   );
-};
+});

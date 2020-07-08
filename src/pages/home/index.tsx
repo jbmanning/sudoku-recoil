@@ -8,7 +8,7 @@ import Board from "./board";
 const Home = observer(() => {
   const gameStore = useContext(GameContext);
 
-  const hasCurrentGame = !!gameStore.currentGame;
+  const game = gameStore.currentGame;
 
   return (
     <S.Wrapper>
@@ -21,7 +21,7 @@ const Home = observer(() => {
               <a
                 onClick={() => gameStore.startGame(board.name, board.val)}
                 style={
-                  board.name === gameStore.currentGame?.name
+                  board.name === game.name
                     ? {
                         textDecoration: "underline",
                         fontWeight: "bold",
@@ -37,32 +37,12 @@ const Home = observer(() => {
       </S.LeftSidebar>
       <S.BoardWrapper>
         <S.BoardActions>
-          <S.Button
-            disabled={!hasCurrentGame}
-            onClick={() => gameStore.currentGame?.resetToStart()}
-          >
-            Reset to start
-          </S.Button>
-          <S.Button
-            disabled={!hasCurrentGame}
-            onClick={() => gameStore.currentGame?.solveGame()}
-          >
-            Solve game
-          </S.Button>
-          <S.Button
-            disabled={!hasCurrentGame}
-            onClick={() => gameStore.currentGame?.stepSolveGame()}
-          >
-            Step solve game
-          </S.Button>
-          <S.Button
-            disabled={!hasCurrentGame}
-            onClick={() => gameStore.currentGame?.copyToClipboard()}
-          >
-            Copy board
-          </S.Button>
+          <S.Button onClick={() => game.resetToStart()}>Reset to start</S.Button>
+          <S.Button onClick={() => game.solveGame()}>Solve game</S.Button>
+          <S.Button onClick={() => game.stepSolveGame()}>Step solve game</S.Button>
+          <S.Button onClick={() => game.copyToClipboard()}>Copy board</S.Button>
         </S.BoardActions>
-        <Board game={gameStore.currentGame} />
+        <Board game={game} />
       </S.BoardWrapper>
     </S.Wrapper>
   );

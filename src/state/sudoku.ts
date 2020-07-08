@@ -25,7 +25,7 @@ export class Cell {
     this.setValue(value, ValueSource.InitialGame);
   }
 
-  get value() {
+  @computed get value() {
     return this.__value;
   }
 
@@ -106,8 +106,8 @@ export class Cell {
 export class Group {
   @observable private readonly _game: Game;
   @observable type: string;
-
   @observable cells: Cell[];
+
   constructor(game: Game, type: string, cells: Cell[]) {
     this.type = type;
     this._game = game;
