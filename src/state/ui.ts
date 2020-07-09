@@ -1,21 +1,33 @@
 import { action, computed, observable } from "mobx";
 import { createContext } from "react";
 import packageJson from "src/../package.json";
+import { atom, RecoilState, selector } from "recoil/dist";
+
+enum UIStoreKeys {
+  _Title = "UIStore__Title",
+  Title = "UIStore_Title",
+}
 
 class UIStore {
   private _appName = packageJson.name;
-  @observable private _title: string | null = null;
+  private _title = atom<string | null>({
+    key: UIStoreKeys._Title,
+    default: null,
+  });
 
-  @action setTitle(title: string | null) {
-    if (title === "") title = null;
-    this._title = title;
-  }
-
-  @computed get title() {
-    if (this._title === null) return this._appName;
-    else return `${this._title} | ${this._appName}`;
-  }
+  title = selector<string>({
+    key: UIStoreKeys.Title,
+    get: ({ get }) => {
+      const title = get(this._title);
+      if (title === null) return this._appName;
+      else return `${title} | ${this._appName}`;
+    },
+    set: ({ set, get }, newValue) => {
+      let title: string | null = typeof newValue === "string" ? newValue : null;
+      if (newValue === "") title = null;
+      set(this._title, title);
+    },
+  });
 }
 
-const uiStore = new UIStore();
-export const UIContext = createContext(uiStore);
+export const uiStore = new UIStore();

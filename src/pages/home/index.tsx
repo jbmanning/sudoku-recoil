@@ -4,6 +4,8 @@ import * as S from "./_home.styled";
 import { Cell, GameContext } from "src/state/sudoku";
 import { observer } from "mobx-react-lite";
 import Board from "./board";
+import { useRecoilState } from "recoil/dist";
+import { uiStore } from "../../state/ui";
 
 const Home = observer(() => {
   const gameStore = useContext(GameContext);
