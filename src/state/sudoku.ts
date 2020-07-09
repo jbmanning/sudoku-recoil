@@ -33,8 +33,10 @@ export class Cell {
     if (this.source === ValueSource.InitialGame) {
       throw new Error("Can not set value of static cell.");
     } else {
-      if (v === 0 || v === undefined) this.__value = undefined;
-      else {
+      if (v === 0 || v === undefined) {
+        this.__value = undefined;
+        this.source = undefined;
+      } else {
         this.__value = v;
         this.source = source;
       }
@@ -45,8 +47,8 @@ export class Cell {
     this.groups.push(group);
   }
 
-  @action addNotPossibleNumbers(...nums: number[]) {
-    if (this.source) return false;
+  @action addNotPossibleNumbers(...nums: number[]): boolean {
+    if (this.value !== undefined) return false;
     let modified = false;
     for (const n of nums) {
       if (!this.notPossibleValues.has(n) && this.availableNumbers.includes(n)) {
@@ -60,7 +62,7 @@ export class Cell {
   @action reset() {
     if (this.source !== ValueSource.InitialGame) {
       this.setValue(undefined, ValueSource.ComputerSolved);
-      this.notPossibleValues = new Set();
+      this.notPossibleValues.clear();
     }
   }
 
@@ -388,8 +390,9 @@ export class Game {
                       !groupCandidateJ.cells.includes(c) &&
                       c.availableNumbers.includes(origPossible)
                     ) {
-                      c.addNotPossibleNumbers(origPossible);
-                      performedAction = true;
+                      if (c.addNotPossibleNumbers(origPossible)) {
+                        performedAction = true;
+                      }
                     }
                   }
 
@@ -531,7 +534,7 @@ class SudokuStore {
   constructor() {
     let gameId = "yWing";
     if (process.env.NODE_ENV === "development") {
-      gameId = "underUsed";
+      // gameId = "underUsed";
       const game = this.knownGames.find((kg) => kg.name === gameId);
       if (game) this.startGame(game.name, game.val);
     }
@@ -540,7 +543,7 @@ class SudokuStore {
   @action startGame(name: string, data: number[]) {
     this._currentGame = new Game(name, data);
     if (process.env.NODE_ENV === "development") {
-      this._currentGame.solveGame();
+      // this._currentGame.solveGame();
     }
   }
 
