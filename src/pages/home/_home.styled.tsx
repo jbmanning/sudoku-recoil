@@ -49,3 +49,18 @@ export const Button = styled.button`
     color: var(--grey-9);
   }
 `;
+
+export const GamesListWrapper = styled.div`
+  border-radius: 8px;
+  width: 200px;
+  border: 2px solid var(--grey-4);
+
+  h3 {
+    border-bottom: 1px solid var(--grey-4);
+    padding: 12px;
+  }
+`;
+
+export const GamesList = styled.div`
+  padding: 12px;
+`;
