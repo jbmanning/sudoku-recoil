@@ -9,7 +9,6 @@ import Home from "src/pages/home";
 const App = () => {
   return (
     <BaseLayout>
-      test
       <Home />
     </BaseLayout>
   );
