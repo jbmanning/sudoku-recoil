@@ -1,15 +1,13 @@
-import { observer } from "mobx-react-lite";
-import React, { useCallback, useContext, useMemo, useRef, useState } from "react";
-import { Cell, GameContext, Game } from "src/state/sudoku";
+import React, { useCallback, useRef, useState } from "react";
+import { Game } from "src/state/sudoku";
 import * as S from "./_board.styled";
 import { useKeyDown, useOutsideClick } from "src/utils/hooks";
-import { gcn } from "src/utils";
 
 type IBoardProps = {
   game: Game;
 };
 
-const Board = observer<IBoardProps>(({ game }) => {
+const Board = ({ game }: IBoardProps) => {
   const boardRef = useRef<HTMLDivElement>(null);
   const [x, setX] = useState(-1);
   const [y, setY] = useState(-1);
@@ -78,6 +76,6 @@ const Board = observer<IBoardProps>(({ game }) => {
       ))}
     </S.Board>
   );
-});
+};
 
 export default Board;

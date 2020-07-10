@@ -44,3 +44,13 @@ export const range = (start: number, end?: number) =>
   end === undefined
     ? Array.from({ length: start }, (v, k) => k)
     : Array.from({ length: end - start }, (v, k) => k + start);
+
+export function mapObject<TSource, TResult>(
+  obj: { [key: string]: TSource },
+  mapFn: (v: TSource, k: string) => TResult
+): { [key: string]: TResult } {
+  return Object.keys(obj).reduce<{ [key: string]: TResult }>(function (prev, key) {
+    prev[key] = mapFn(obj[key], key);
+    return prev;
+  }, {});
+}

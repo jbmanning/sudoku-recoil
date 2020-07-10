@@ -2,7 +2,6 @@ import React from "react";
 import styled from "styled-components";
 import tailwindConfig, { tailwindTheme } from "src/styles/tailwind";
 import { Cell as CellObj, Game, ValueSource } from "src/state/sudoku";
-import { observer } from "mobx-react-lite";
 
 const getBorderColor = ({ game }: { game: Game }) =>
   game.isSolved
@@ -113,7 +112,7 @@ export const AvailableNumber = styled.div`
   align-items: center;
 `;
 
-export const GameCell = observer(({ game, cell, isFocused }: GameCellProps) => {
+export const GameCell = ({ game, cell, isFocused }: GameCellProps) => {
   return (
     <StyledGameCell game={game} cell={cell} isFocused={isFocused}>
       {cell.value !== undefined
@@ -123,4 +122,4 @@ export const GameCell = observer(({ game, cell, isFocused }: GameCellProps) => {
         : cell.availableNumbers.map((a) => <AvailableNumber key={a}>{a}</AvailableNumber>)}
     </StyledGameCell>
   );
-});
+};

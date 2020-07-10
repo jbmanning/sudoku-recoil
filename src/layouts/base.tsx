@@ -1,6 +1,5 @@
-import React, { useContext, FC } from "react";
+import React, { FC } from "react";
 import { Helmet } from "react-helmet";
-import { observer } from "mobx-react-lite";
 import { RecoilRoot } from "recoil";
 
 import { uiStore } from "src/state/ui";
