@@ -4,7 +4,7 @@ import {
   atom,
   atomFamily,
   AtomOptions,
-  CallbackInterface,
+  CallbackInterface as RecoilCallbackInterface,
   DefaultValue,
   RecoilState,
   RecoilValue,
@@ -107,7 +107,23 @@ export function evaluatingAtomFamily<
   return (scopeParam, evalParam) => evaluationSelector({ scopeParam, evalParam });
 }
 
-export function useRecoilAction<T>(fn: (p: CallbackInterface) => T): T {
+export interface MyCallbackInterface extends RecoilCallbackInterface {
+  get: <T>(p: RecoilValue<T>) => T;
+}
+
+function addGetToCallbackInterface(p: MyCallbackInterface): MyCallbackInterface {
+  return {
+    ...p,
+    get: <T>(inVal: RecoilValue<T>) => {
+      const valLoadable = p.snapshot.getLoadable(inVal);
+      if (valLoadable.state !== "hasValue")
+        throw new Error("callbackInterface: Invalid loadable state");
+      return valLoadable.contents;
+    },
+  };
+}
+
+export function useRecoilAction<T extends Function>(fn: (p: MyCallbackInterface) => T): T {
   // @ts-ignore
-  return useRecoilCallback((p) => fn(p));
+  return useRecoilCallback((p) => fn(addGetToCallbackInterface(p)));
 }

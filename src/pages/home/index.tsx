@@ -10,10 +10,14 @@ import {
 import { gameManager } from "src/state/sudoku";
 import { useRecoilAction } from "src/utils/recoil";
 import { uiStore } from "src/state/ui";
+import { uuid } from "src/utils";
 
 const Home = () => {
   const stack = useRecoilValue(uiStore.modalManager.stack);
-  const pushModal = useRecoilAction(uiStore.modalManager.pushModal);
+  const pushModal = useRecoilAction(uiStore.modalManager.openModal);
+  const gameBoards = useRecoilValue(gameManager.gameBoards);
+  const activeGames = useRecoilValue(gameManager._activeGames);
+  const setCurrentGame = useRecoilAction(gameManager.setCurrentGame);
 
   /*
   const importBoard = useCallback(() => {
@@ -26,9 +30,7 @@ const Home = () => {
   return (
     <S.Wrapper>
       <div className={"w-3/12 h-full p-4"}>
-        <button className={"btn btn-blue"} onClick={() => pushModal({ name: "Halp" })}>
-          Clear Board
-        </button>
+        <button className={"btn btn-blue"}>Clear Board</button>
         <button className={"btn btn-blue mt-4"} onClick={() => {}}>
           Import Board
         </button>
@@ -36,18 +38,29 @@ const Home = () => {
         <div className={"mt-4"}>
           <h3 className={"font-bold text-lg"}>Sample games</h3>
           <div className={"pl-2"}>
-            {stack.map((c, i) => (
-              <div key={i}>{JSON.stringify(c)}</div>
-            ))}
-            {/*{Object.entries(gameBoards).map(([name, board]) => (
+            {Object.entries(gameBoards).map(([name, board]) => (
               <a
                 className={"table cursor-pointer"}
                 key={name}
-                onClick={() => setGame(new Game(name, gameManager, board))}
+                onClick={() => setCurrentGame(uuid(), board)}
               >
                 {name}
               </a>
-            ))}*/}
+            ))}
+          </div>
+          <h3 className={"font-bold text-lg"}>Stack</h3>
+          <div className={"pl-2"}>
+            {stack.map((c, i) => (
+              <div key={i}>{JSON.stringify(c)}</div>
+            ))}
+          </div>
+          <h3 className={"font-bold text-lg"}>Active games</h3>
+          <div className={"pl-2"}>
+            {Object.entries(activeGames).map(([name, game], i) => (
+              <a className={"table cursor-pointer"} key={i}>
+                {name}
+              </a>
+            ))}
           </div>
         </div>
       </div>

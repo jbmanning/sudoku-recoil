@@ -2,7 +2,6 @@ import styled from "styled-components";
 import tw from "twin.macro";
 
 export const Wrapper = styled.div`
-  background-color: var(--grey-1);
   color: var(--grey-9);
 
   display: flex;

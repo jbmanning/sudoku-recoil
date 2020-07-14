@@ -1,8 +1,12 @@
-import { atom, CallbackInterface, selector } from "recoil/dist";
+import { atom, selector } from "recoil";
 import { StateManager } from "src/utils";
+import { MyCallbackInterface } from "src/utils/recoil";
+import { ModalType } from "src/components/modalManager";
 
-type IModal = {
-  name: string;
+export type IModal = {
+  type: ModalType;
+  message: string;
+  cb: Function;
 };
 
 class ModalManager extends StateManager {
@@ -11,15 +15,25 @@ class ModalManager extends StateManager {
     default: [],
   });
 
-  pushModal = ({ snapshot: { getLoadable }, set }: CallbackInterface) => (m: IModal) => {
-    const stackLoadable = getLoadable(this.stack);
-    if (stackLoadable.state !== "hasValue") throw new Error("pushModal: Invalid state");
-    const stack = stackLoadable.contents;
-    set(this.stack, [...stack, m]);
+  openModal = ({ get, set }: MyCallbackInterface) => (m: IModal) => {
+    const stack = get(this.stack);
+    if (stack.includes(m)) {
+      console.error("pushModal: Attempted to push duplicate modal to stack, exiting.");
+    } else set(this.stack, [...stack, m]);
+  };
+
+  closeModal = ({ get, set }: MyCallbackInterface) => (m: IModal) => {
+    const stack = get(this.stack);
+    const si = stack.findIndex((e) => e === m);
+    if (si > -1)
+      set(
+        this.stack,
+        stack.filter((e) => e !== m)
+      );
   };
 }
 
-class UIStore extends StateManager {
+export class UIStore extends StateManager {
   private _appName = "Sudoku";
   private _title = atom<string>({
     key: this.keys._Title,

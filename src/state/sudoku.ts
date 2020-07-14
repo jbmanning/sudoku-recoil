@@ -1,18 +1,15 @@
-import copy from "copy-to-clipboard";
-import { createContext } from "react";
 import rawGameData from "src/__data";
-import { exists, mapObject, range, readBoardFile, StateManager } from "src/utils";
-import { findCoveredUnions } from "src/utils/sudoku";
 import {
-  atom,
-  atomFamily,
-  CallbackInterface,
-  RecoilState,
-  RecoilValue,
-  selector,
-  SetterOrUpdater,
-} from "recoil/dist";
-import { evaluatingAtomFamily } from "../utils/recoil";
+  arraysExactlyEqual,
+  objectFilter,
+  objectMap,
+  readBoardFile,
+  StateManager,
+} from "src/utils";
+import { atom, CallbackInterface, selector } from "recoil/dist";
+import { MyCallbackInterface } from "../utils/recoil";
+import { UIStore, uiStore as rootUIStore } from "src/state/ui";
+import { ModalType } from "src/components/modalManager";
 
 /*export class Cell {
   @observable private readonly _game: Game;
@@ -647,7 +644,8 @@ export class Game extends StateManager {
 }
 
 class GameManager extends StateManager {
-  private static _defaultGameBoards = mapObject(rawGameData, (v) => readBoardFile(v));
+  private static _defaultGameBoards = objectMap(rawGameData, (v) => readBoardFile(v));
+  static defaultGameName = "default";
   static blankReadonlyGame = new Game(
     "empty game",
     [],
@@ -655,17 +653,67 @@ class GameManager extends StateManager {
     true
   );
 
+  uiStore;
+  constructor(identifier: string, tree: StateManager | StateManager[], uiStore: UIStore) {
+    super(identifier, tree);
+    this.uiStore = uiStore;
+  }
+
   gameBoards = atom<{ [name: string]: number[] }>({
     key: this.keys.GameBoards,
     default: GameManager._defaultGameBoards,
   });
 
-  currentGame = atom<Game>({
-    key: this.keys.CurrentGame,
-    default: GameManager.blankReadonlyGame,
+  _activeGames = atom<{ [name: string]: Game }>({
+    key: this.keys.ActiveGames,
+    default: { [GameManager.defaultGameName]: GameManager.blankReadonlyGame },
   });
 
-  setCurrentGame = (p: CallbackInterface) => () => {};
+  private _currentGameName = atom<string>({
+    key: this.keys._CurrentGameName,
+    default: GameManager.defaultGameName,
+  });
+
+  currentGame = selector<Game>({
+    key: this.keys.CurrentGame,
+    get: ({ get }) => {
+      const gameName = get(this._currentGameName);
+      return get(this._activeGames)[gameName];
+    },
+  });
+
+  setCurrentGame = <T extends Function>(props: MyCallbackInterface) => (
+    name: string,
+    gameBoard: number[]
+  ) => {
+    const { get, set } = props;
+    const activeGames = get(this._activeGames);
+    const matching = objectFilter(activeGames, (gb) =>
+      arraysExactlyEqual(
+        get(gb.cells).map((c) =>
+          c.value === undefined || c.source !== ValueSource.InitialGame ? 0 : c.value
+        ),
+        gameBoard
+      )
+    );
+    const callback = () => {
+      const newGame = new Game(name, [...this.tree, this], gameBoard);
+      // @ts-ignore https://github.com/microsoft/TypeScript/issues/13948
+      set(this._activeGames, {
+        ...activeGames,
+        [name]: newGame,
+      });
+    };
+
+    Object.keys(matching).length === 0
+      ? callback()
+      : this.uiStore.modalManager.openModal(props)({
+          type: ModalType.Confirmation,
+          message:
+            "It appears that you have already started a game with this board, would you like to overwrite?",
+          cb: callback,
+        });
+  };
 }
 
-export const gameManager = new GameManager("root", []);
+export const gameManager = new GameManager("root", [], rootUIStore);

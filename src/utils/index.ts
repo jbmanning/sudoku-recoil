@@ -43,7 +43,7 @@ export const range = (start: number, end?: number) =>
     ? Array.from({ length: start }, (v, k) => k)
     : Array.from({ length: end - start }, (v, k) => k + start);
 
-export function mapObject<TSource, TResult>(
+export function objectMap<TSource, TResult>(
   obj: { [key: string]: TSource },
   mapFn: (v: TSource, k: string) => TResult
 ): { [key: string]: TResult } {
@@ -52,6 +52,22 @@ export function mapObject<TSource, TResult>(
     return prev;
   }, {});
 }
+
+export function objectFilter<TSource>(
+  obj: { [key: string]: TSource },
+  filterFn: (v: TSource, k: string) => boolean
+): { [key: string]: TSource } {
+  return Object.keys(obj).reduce<{ [key: string]: TSource }>(function (prev, key) {
+    if (filterFn(obj[key], key)) prev[key] = obj[key];
+    return prev;
+  }, {});
+}
+
+export const arraysLooslyEqual = <T>(a: T[], b: T[]) =>
+  a.length === b.length && a.every((e) => b.includes(e));
+
+export const arraysExactlyEqual = <T>(a: T[], b: T[]) =>
+  a.length === b.length && a.every((e, i) => b[i] === e);
 
 export function slugify(string: string) {
   const a = "àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;";
