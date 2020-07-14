@@ -1,71 +1,73 @@
-import React from "react";
+import React, { useCallback } from "react";
 
 import * as S from "./_home.styled";
+import {
+  DefaultValue,
+  useRecoilState,
+  useRecoilValue,
+  useResetRecoilState,
+} from "recoil/dist";
+import { gameManager } from "src/state/sudoku";
+import { useRecoilAction } from "src/utils/recoil";
+import { uiStore } from "src/state/ui";
 
 const Home = () => {
-  // const [_game, setGame] = useRecoilState(gameManagerRecoil.currentGame);
+  const stack = useRecoilValue(uiStore.modalManager.stack);
+  const pushModal = useRecoilAction(uiStore.modalManager.pushModal);
+
+  /*
+  const importBoard = useCallback(() => {
+    const data = prompt("Enter the board: ");
+    if (data) {
+      setGame(new Game(uuid(), gameManager, data));
+    }
+  }, [setGame]);*/
+
   return (
     <S.Wrapper>
-      <S.LeftSidebar>
-        {/*<S.Button onClick={() => setGame(new Game("", [1]))}>New Board</S.Button>*/}
-        {/*<S.Button>Import Board</S.Button>*/}
-        {/*<S.GamesListWrapper>
-          <h3>Sample Games</h3>
-          <hr />
-          <S.GamesList>
-            {gameStore.knownGames.map((board, i) => (
-              <div key={i}>
-                <a
-                  onClick={() => gameStore.startGame(board.name, board.val)}
-                  style={
-                    board.name === game.name
-                      ? {
-                          textDecoration: "underline",
-                          fontWeight: "bold",
-                        }
-                      : undefined
-                  }
-                >
-                  {board.name}
-                </a>
-              </div>
+      <div className={"w-3/12 h-full p-4"}>
+        <button className={"btn btn-blue"} onClick={() => pushModal({ name: "Halp" })}>
+          Clear Board
+        </button>
+        <button className={"btn btn-blue mt-4"} onClick={() => {}}>
+          Import Board
+        </button>
+
+        <div className={"mt-4"}>
+          <h3 className={"font-bold text-lg"}>Sample games</h3>
+          <div className={"pl-2"}>
+            {stack.map((c, i) => (
+              <div key={i}>{JSON.stringify(c)}</div>
             ))}
-          </S.GamesList>
-        </S.GamesListWrapper>
-        <S.Button>Import Board</S.Button>
-        <div>
-          {gameStore.knownGames.map((board, i) => (
-            <div key={i}>
+            {/*{Object.entries(gameBoards).map(([name, board]) => (
               <a
-                onClick={() => gameStore.startGame(board.name, board.val)}
-                style={
-                  board.name === game.name
-                    ? {
-                        textDecoration: "underline",
-                        fontWeight: "bold",
-                      }
-                    : undefined
-                }
+                className={"table cursor-pointer"}
+                key={name}
+                onClick={() => setGame(new Game(name, gameManager, board))}
               >
-                {board.name}
+                {name}
               </a>
-            </div>
-          ))}
-        </div>*/}
-      </S.LeftSidebar>
-      <S.BoardWrapper>
-        {/*<S.BoardActions>
-          <S.Button onClick={() => game.resetToStart()}>Reset to start</S.Button>
-          <S.Button onClick={() => game.solveGame()}>Solve game</S.Button>
-          <S.Button onClick={() => game.stepSolveGame()}>Step solve game</S.Button>
-          <S.Button onClick={() => game.copyToClipboard()}>Copy board</S.Button>
-        </S.BoardActions>*/}
-        <div>
-          Known issues with observability on border colors when performing actions. Working to
-          move to Recoil.js for state management which should resolve issues.
+            ))}*/}
+          </div>
         </div>
-        {/*<Board game={game} />*/}
-      </S.BoardWrapper>
+      </div>
+      <div className={"w-9/12 h-full flex flex-col"}>
+        <div className={" p-4 flex"}>
+          <button className={"btn btn-blue "} onClick={() => 5}>
+            Reset to start
+          </button>
+          <button className={"btn btn-blue ml-4"} onClick={() => 5}>
+            Step solve game
+          </button>
+          <button className={"btn btn-blue ml-4"} onClick={() => 5}>
+            Solve game
+          </button>
+          <button className={"btn btn-blue ml-4"} onClick={() => 5}>
+            Copy board
+          </button>
+        </div>
+        <div className={"flex-1"}></div>
+      </div>
     </S.Wrapper>
   );
 };

@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from "react";
 import { Game } from "src/state/sudoku";
 import * as S from "./_board.styled";
 import { useKeyDown, useOutsideClick } from "src/utils/hooks";
+import { useRecoilValue } from "recoil";
 
 type IBoardProps = {
   game: Game;
@@ -48,15 +49,17 @@ const Board = ({ game }: IBoardProps) => {
     { targetKey: "ArrowDown", handler: downHandler },
   ]);
 
+  // const cells = useRecoilValue(game.cells);
+
   return (
     <S.Board ref={boardRef} game={game}>
       <S.CellSquare />
-      {game.cells.slice(0, game.size).map((c) => (
+      {/*{cells.slice(0, game.size).map((c) => (
         <S.CellSquare key={`column_${c.colName}`} isColLabel>
           {c.colName}
         </S.CellSquare>
       ))}
-      {game.cells.map((c, i) => (
+      {cells.map((c, i) => (
         <React.Fragment key={`invisGroup_${i}`}>
           {c.colNumber % game.size === 0 ? (
             <S.CellSquare key={`row_${c.rowName}`} isRowLabel>
@@ -73,7 +76,7 @@ const Board = ({ game }: IBoardProps) => {
             />
           </S.CellSquare>
         </React.Fragment>
-      ))}
+      ))}*/}
     </S.Board>
   );
 };

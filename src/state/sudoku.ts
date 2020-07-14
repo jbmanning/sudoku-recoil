@@ -1,9 +1,18 @@
 import copy from "copy-to-clipboard";
 import { createContext } from "react";
 import rawGameData from "src/__data";
-import { exists, mapObject, range, readBoardFile } from "src/utils";
+import { exists, mapObject, range, readBoardFile, StateManager } from "src/utils";
 import { findCoveredUnions } from "src/utils/sudoku";
-import { atom, selector } from "recoil/dist";
+import {
+  atom,
+  atomFamily,
+  CallbackInterface,
+  RecoilState,
+  RecoilValue,
+  selector,
+  SetterOrUpdater,
+} from "recoil/dist";
+import { evaluatingAtomFamily } from "../utils/recoil";
 
 /*export class Cell {
   @observable private readonly _game: Game;
@@ -545,35 +554,51 @@ class SudokuStore {
     return Object.entries(rawGameData).map(([k, v]) => ({ name: k, val: readBoardFile(v) }));
   }
 
-  @computed get currentGame(): Game {
-    if (this._currentGame && !this._currentGame.isValidGame) {
-      alert("Current game does not seem to be valid");
-    }
-    return this._currentGame || SudokuStore.emptyGame;
-  }
-}
+export class Cell {
+  @observable private readonly _game: Game;
+  @observable private __value: number | undefined;
+  @observable readonly index: number;
+  @observable source?: ValueSource;
+  @observable groups: Group[] = [];
+  @observable notPossibleValues: Set<number> = new Set();
 
-const gameStore = new SudokuStore();*/
+  constructor(game: Game, value: number, i: number) {
+    this._game = game;
+    this.index = i;
+    this.setValue(value, ValueSource.InitialGame);
+  }
+
+
+this.currentGame = selector<Game>({
+      key: this.keys.CurrentGame,
+      get: ({ get }) => {
+        const currentGame = get(_currentGame);
+        if (!currentGame.isValidGame) {
+          alert("Current game does not seem to be valid");
+          return GameManager.blankReadonlyGame;
+        }
+        return _currentGame || GameManager.blankReadonlyGame;
+      },
+      set: ({ set, reset }, newValue) => {
+        reset(_currentGame);
+        set(_currentGame, newValue);
+      },
+    });
+
+
+
+*/
+
 export enum ValueSource {
   InitialGame,
   ComputerSolved,
   UserEntry,
 }
 
-export class Game {
-  isValidGame = true;
-  isSolved = true;
-  isValid = true;
-  size = 5;
-  squareSize = 5;
-  isEmptyGame = false;
-  cells = [new Cell(), new Cell()];
-
-  constructor(name: string, nums: number[], readonly: boolean = false) {}
-}
-
 export class Cell {
-  value = 3;
+  private _game;
+  index;
+  value;
   colNumber = 3;
   rowNumber = 3;
   isValid = true;
@@ -581,68 +606,66 @@ export class Cell {
   availableNumbers = [1, 2, 3];
   colName = "a";
   rowName = "a";
-}
 
-export class CellRecoil {}
-
-/*
-  constructor() {
-    let gameId = "yWing";
-    if (process.env.NODE_ENV === "development") {
-      // gameId = "underUsed";
-      const game = this.knownGames.find((kg) => kg.name === gameId);
-      if (game) this.startGame(game.name, game.val);
-    }
+  constructor(game: Game, i: number, value: number) {
+    this._game = game;
+    this.index = i;
+    this.value = value;
   }
-*/
-enum GameManagerKeys {
-  KnownGames = "GameManager_KnownGames",
-  _CurrentGame = "GameManager__CurrentGame",
-  CurrentGame = "GameManager_CurrentGame",
 }
 
-class GameManagerRecoil {
-  static defaultGames = mapObject(rawGameData, (v) => readBoardFile(v));
+export class Game extends StateManager {
+  name;
+  isValidGame = true;
+  isSolved = true;
+  isValid = true;
+  size = 5;
+  squareSize = 5;
+  isEmptyGame = false;
+  cells;
+
+  constructor(
+    name: string,
+    tree: StateManager[] | StateManager,
+    data: any,
+    readonly: boolean = false
+  ) {
+    super(name, tree);
+    this.name = name;
+
+    let _data = readBoardFile(data);
+    this.cells = atom<Cell[]>({
+      key: this.keys.Cells,
+      default: _data.map((c, i) => new Cell(this, i, c)),
+    });
+  }
+
+  setCellValue = ({ snapshot: { getLoadable }, set }: CallbackInterface) => (
+    i: number,
+    value: number | null
+  ) => {};
+}
+
+class GameManager extends StateManager {
+  private static _defaultGameBoards = mapObject(rawGameData, (v) => readBoardFile(v));
   static blankReadonlyGame = new Game(
     "empty game",
+    [],
     Array.from(Array(81), () => 0),
     true
   );
 
-  private _currentGame = atom<Game>({
-    key: GameManagerKeys._CurrentGame,
-    default: GameManagerRecoil.blankReadonlyGame,
+  gameBoards = atom<{ [name: string]: number[] }>({
+    key: this.keys.GameBoards,
+    default: GameManager._defaultGameBoards,
   });
 
-  currentGame = selector<Game>({
-    key: GameManagerKeys.CurrentGame,
-    get: ({ get }) => {
-      const currentGame = get(this._currentGame);
-      if (currentGame && !currentGame.isValidGame) {
-        alert("Current game does not seem to be valid");
-        return GameManagerRecoil.blankReadonlyGame;
-      }
-      return this._currentGame || GameManagerRecoil.blankReadonlyGame;
-    },
-    set: ({ set, get }, newValue) => {
-      let game: Game;
-      let y = {};
-      if (y instanceof Game) console.log("hello");
-      if (newValue instanceof Game) game = newValue;
-      else game = GameManagerRecoil.blankReadonlyGame;
-
-      /*
-      TODO: Reintroduce... Set will not run for the initial value, how can this be accounted for? In get?
-      if (process.env.NODE_ENV === "development") {
-        (async () => {
-          console.log("RUNNING ------------");
-          game.solveGame();
-        })();
-      }*/
-
-      set(this._currentGame, game);
-    },
+  currentGame = atom<Game>({
+    key: this.keys.CurrentGame,
+    default: GameManager.blankReadonlyGame,
   });
+
+  setCurrentGame = (p: CallbackInterface) => () => {};
 }
 
-export const gameManagerRecoil = new GameManagerRecoil();
+export const gameManager = new GameManager("root", []);

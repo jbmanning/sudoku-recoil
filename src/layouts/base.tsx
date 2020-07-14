@@ -1,9 +1,8 @@
 import React, { FC } from "react";
 import { Helmet } from "react-helmet";
-import { RecoilRoot } from "recoil";
 
 import { uiStore } from "src/state/ui";
-import { useRecoilValue } from "recoil/dist";
+import { RecoilRoot, useRecoilValue } from "recoil";
 
 const StateDependantLayout: FC = ({ children }) => {
   const title = useRecoilValue(uiStore.title);

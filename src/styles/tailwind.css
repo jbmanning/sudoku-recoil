@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.btn {
+  @apply block transition duration-300 ease-in-out py-2 px-4 rounded;
+}
+.btn-blue {
+  @apply bg-blue-600 text-white;
+}
+.btn-blue:hover {
+  @apply bg-blue-800 underline;
+}
+
+.btn-white {
+  @apply bg-white text-grey-900;
+}
+.btn-white:hover {
+  @apply bg-grey-200 underline;
+}
