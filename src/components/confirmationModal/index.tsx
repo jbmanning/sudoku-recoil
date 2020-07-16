@@ -2,12 +2,20 @@ import React, { useMemo } from "react";
 import { ModalProps } from "src/components/modalManager";
 import BaseModal from "src/components/baseModal";
 import * as S from "./_confirmationModal.styled";
+import { useRecoilCallbackProps } from "src/utils/recoil";
 // import { useRecoilActionList } from "src/utils/recoil";
 
 const ConfirmationModal: React.FC<ModalProps> = ({ modal }) => {
-  const { actions, message, title } = modal;
-  const recoilActionCallbacks = useMemo(() => actions.map((a) => a.cb), [actions]);
-  // const actionCallbacks = useRecoilActionList(recoilActionCallbacks);
+  const { actions: recoilActions, message, title } = modal;
+  const gci = useRecoilCallbackProps();
+  const actions = useMemo(
+    () =>
+      recoilActions.map((ra) => ({
+        ...ra,
+        cb: () => ra.cb(gci),
+      })),
+    [gci, recoilActions]
+  );
 
   return (
     <BaseModal>
@@ -15,11 +23,7 @@ const ConfirmationModal: React.FC<ModalProps> = ({ modal }) => {
       <S.Body>{message}</S.Body>
       <S.Buttons>
         {actions.map((a, i) => (
-          <button
-            key={i}
-            className={a.classNames ?? "btn btn-blue ml-2"}
-            // onClick={actionCallbacks[i]}
-          >
+          <button key={i} className={a.classNames ?? "btn btn-blue ml-2"} onClick={a.cb}>
             {a.text}
           </button>
         ))}
