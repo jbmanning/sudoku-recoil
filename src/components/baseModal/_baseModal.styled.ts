@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import tw from "twin.macro";
 
 export const Wrapper = styled.div`
   position: fixed;
@@ -17,4 +18,5 @@ export const ModalWrapper = styled.div`
   top: 30%;
   left: 50%;
   transform: translate(-50%, -50%);
+  ${tw`rounded-md`}
 `;

@@ -1,12 +1,13 @@
 import { atom, selector } from "recoil";
 import { StateManager } from "src/utils";
-import { MyCallbackInterface } from "src/utils/recoil";
+import { RecoilAction, RecoilCallbackGetter } from "src/utils/recoil";
 import { ModalType } from "src/components/modalManager";
 
 export type IModal = {
   type: ModalType;
+  title?: string;
   message: string;
-  cb: Function;
+  actions: { text: string; cb: RecoilAction<void[], void>; classNames?: string }[];
 };
 
 class ModalManager extends StateManager {
@@ -15,17 +16,20 @@ class ModalManager extends StateManager {
     default: [],
   });
 
-  openModal = ({ get, set }: MyCallbackInterface) => (m: IModal) => {
+  openModal = (getCallbackInterface: RecoilCallbackGetter, m: IModal) => {
+    const { get, set } = getCallbackInterface();
     const stack = get(this.stack);
     if (stack.includes(m)) {
       console.error("pushModal: Attempted to push duplicate modal to stack, exiting.");
     } else set(this.stack, [...stack, m]);
   };
 
-  closeModal = ({ get, set }: MyCallbackInterface) => (m: IModal) => {
+  closeModal = (getCallbackInterface: RecoilCallbackGetter, m: IModal) => {
+    const { get, set } = getCallbackInterface();
     const stack = get(this.stack);
     const si = stack.findIndex((e) => e === m);
-    if (si > -1)
+    if (si === -1) console.error("Did not find modal...");
+    else
       set(
         this.stack,
         stack.filter((e) => e !== m)

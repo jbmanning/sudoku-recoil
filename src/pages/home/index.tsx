@@ -29,13 +29,13 @@ const Home = () => {
 
   return (
     <S.Wrapper>
-      <div className={"w-3/12 h-full p-4"}>
+      <div className={"w-3/12 h-full p-4 flex flex-col items-start"}>
         <button className={"btn btn-blue"}>Clear Board</button>
         <button className={"btn btn-blue mt-4"} onClick={() => {}}>
           Import Board
         </button>
 
-        <div className={"mt-4"}>
+        <div className={"mt-4 flex-1 overflow-auto"}>
           <h3 className={"font-bold text-lg"}>Sample games</h3>
           <div className={"pl-2"}>
             {Object.entries(gameBoards).map(([name, board]) => (

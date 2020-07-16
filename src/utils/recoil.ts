@@ -4,6 +4,7 @@ import {
   atom,
   atomFamily,
   AtomOptions,
+  CallbackInterface,
   CallbackInterface as RecoilCallbackInterface,
   DefaultValue,
   RecoilState,
@@ -107,11 +108,11 @@ export function evaluatingAtomFamily<
   return (scopeParam, evalParam) => evaluationSelector({ scopeParam, evalParam });
 }
 
-export interface MyCallbackInterface extends RecoilCallbackInterface {
-  get: <T>(p: RecoilValue<T>) => T;
+interface MyCallbackInterface extends RecoilCallbackInterface {
+  readonly get: <T>(p: RecoilValue<T>) => T;
 }
 
-function addGetToCallbackInterface(p: MyCallbackInterface): MyCallbackInterface {
+function addGetToCallbackInterface(p: CallbackInterface): MyCallbackInterface {
   return {
     ...p,
     get: <T>(inVal: RecoilValue<T>) => {
@@ -123,7 +124,31 @@ function addGetToCallbackInterface(p: MyCallbackInterface): MyCallbackInterface 
   };
 }
 
-export function useRecoilAction<T extends Function>(fn: (p: MyCallbackInterface) => T): T {
-  // @ts-ignore
-  return useRecoilCallback((p) => fn(addGetToCallbackInterface(p)));
+export type RecoilCallbackGetter = () => MyCallbackInterface;
+
+export function useRecoilCallbackProps(): RecoilCallbackGetter {
+  return useRecoilCallback((p) => () => addGetToCallbackInterface(p));
+}
+
+export type RecoilAction<TArgs extends any[], TReturn> = (
+  getCallbackInterface: RecoilCallbackGetter,
+  ...args: TArgs
+) => TReturn;
+
+type ExtractTArgs<T extends RecoilAction<any, any>> = T extends RecoilAction<infer TArgs, any>
+  ? TArgs
+  : never;
+
+type ExtractTReturn<T extends RecoilAction<any, any>> = T extends RecoilAction<
+  any,
+  infer TReturn
+>
+  ? TReturn
+  : never;
+
+export function useRecoilAction<T extends RecoilAction<any[], any>>(
+  fn: T
+): (...usrArgs: ExtractTArgs<T>) => ExtractTReturn<T> {
+  const getCallbackInterface = useRecoilCallbackProps();
+  return (...args) => fn(getCallbackInterface, ...args);
 }

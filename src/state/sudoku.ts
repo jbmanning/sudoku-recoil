@@ -7,9 +7,9 @@ import {
   StateManager,
 } from "src/utils";
 import { atom, CallbackInterface, selector } from "recoil/dist";
-import { MyCallbackInterface } from "../utils/recoil";
 import { UIStore, uiStore as rootUIStore } from "src/state/ui";
 import { ModalType } from "src/components/modalManager";
+import { RecoilAction, RecoilCallbackGetter } from "src/utils/recoil";
 
 /*export class Cell {
   @observable private readonly _game: Game;
@@ -682,11 +682,12 @@ class GameManager extends StateManager {
     },
   });
 
-  setCurrentGame = <T extends Function>(props: MyCallbackInterface) => (
+  setCurrentGame = <T extends Function>(
+    getCallbackInterface: RecoilCallbackGetter,
     name: string,
     gameBoard: number[]
   ) => {
-    const { get, set } = props;
+    const { get, set } = getCallbackInterface();
     const activeGames = get(this._activeGames);
     const matching = objectFilter(activeGames, (gb) =>
       arraysExactlyEqual(
@@ -696,8 +697,14 @@ class GameManager extends StateManager {
         gameBoard
       )
     );
-    const callback = () => {
+    const closeModal = (getCallbackInterface: RecoilCallbackGetter) => {
+      this.uiStore.modalManager.closeModal(getCallbackInterface, modal);
+    };
+
+    const callback = (getCallbackInterface: RecoilCallbackGetter) => {
+      const { get, set } = getCallbackInterface();
       const newGame = new Game(name, [...this.tree, this], gameBoard);
+      const activeGames = get(this._activeGames);
       // @ts-ignore https://github.com/microsoft/TypeScript/issues/13948
       set(this._activeGames, {
         ...activeGames,
@@ -705,14 +712,25 @@ class GameManager extends StateManager {
       });
     };
 
+    const modal = {
+      type: ModalType.Confirmation,
+      message:
+        "It appears that you have already started a game with this board, would you like to overwrite?",
+      actions: [
+        {
+          text: "Confirm",
+          cb: (getCallbackInterface: RecoilCallbackGetter) => {
+            callback(getCallbackInterface);
+            closeModal(getCallbackInterface);
+          },
+        },
+        { text: "Cancel", cb: closeModal, classNames: "btn btn-tertiary ml-2" },
+      ],
+    };
+
     Object.keys(matching).length === 0
-      ? callback()
-      : this.uiStore.modalManager.openModal(props)({
-          type: ModalType.Confirmation,
-          message:
-            "It appears that you have already started a game with this board, would you like to overwrite?",
-          cb: callback,
-        });
+      ? callback(getCallbackInterface)
+      : this.uiStore.modalManager.openModal(getCallbackInterface, modal);
   };
 }
 

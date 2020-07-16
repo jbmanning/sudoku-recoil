@@ -20,7 +20,6 @@ const ModalFallback = null;
 const ModalManager = () => {
   const stack = useRecoilValue(uiStore.modalManager.stack);
 
-  // ({ key: i, modal: m })
   return (
     <>
       {stack.map((m, i) => {
