@@ -1,6 +1,5 @@
 import { atom, selector } from "recoil";
-import { StateManager } from "src/utils";
-import { RecoilAction, RecoilCallbackGetter } from "src/utils/recoil";
+import { StateManager, RecoilAction, RecoilCallbackGetter } from "src/utils/recoil";
 import { ModalType } from "src/components/modalManager";
 
 export type IModal = {

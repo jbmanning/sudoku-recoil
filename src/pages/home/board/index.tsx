@@ -9,6 +9,9 @@ type IBoardProps = {
 };
 
 const Board = ({ game }: IBoardProps) => {
+  const cells = useRecoilValue(game.cells);
+  const readonlyGame = useRecoilValue(game.readonlyGame);
+
   const boardRef = useRef<HTMLDivElement>(null);
   const [x, setX] = useState(-1);
   const [y, setY] = useState(-1);
@@ -52,16 +55,15 @@ const Board = ({ game }: IBoardProps) => {
   // const cells = useRecoilValue(game.cells);
 
   return (
-    <S.Board ref={boardRef} game={game}>
-      <S.CellSquare />
-      {/*{cells.slice(0, game.size).map((c) => (
+    <S.Board ref={boardRef} game={readonlyGame}>
+      {cells.slice(0, readonlyGame.size).map((c) => (
         <S.CellSquare key={`column_${c.colName}`} isColLabel>
           {c.colName}
         </S.CellSquare>
       ))}
       {cells.map((c, i) => (
         <React.Fragment key={`invisGroup_${i}`}>
-          {c.colNumber % game.size === 0 ? (
+          {c.colNumber % readonlyGame.size === 0 ? (
             <S.CellSquare key={`row_${c.rowName}`} isRowLabel>
               {c.rowName}
             </S.CellSquare>
@@ -76,7 +78,7 @@ const Board = ({ game }: IBoardProps) => {
             />
           </S.CellSquare>
         </React.Fragment>
-      ))}*/}
+      ))}
     </S.Board>
   );
 };

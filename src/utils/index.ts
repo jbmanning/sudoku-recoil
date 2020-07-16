@@ -1,6 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
+import { RecoilValue } from "recoil";
 
 export const exists = (e: any | unknown): boolean => e !== null && e !== undefined && e !== "";
 export { default as deepclone } from "lodash.clonedeep";
@@ -84,30 +83,6 @@ export function slugify(string: string) {
     .replace(/--+/g, "-") // Replace multiple - with single -
     .replace(/^-+/, "") // Trim - from start of text
     .replace(/-+$/, ""); // Trim - from end of text
-}
-
-export class StateManager {
-  keys;
-  tree: StateManager[];
-  identifier;
-  constructor(instance: string, tree: StateManager[] | StateManager) {
-    const base = this;
-    this.tree = Array.isArray(tree) ? tree : [tree];
-    this.identifier = [base.constructor.name, slugify(instance)].filter((c) => c).join(".");
-
-    const childIdentifier = [...base.tree.map((t) => t.identifier), base.identifier].join(
-      "::"
-    );
-    console.log(childIdentifier);
-    this.keys = new Proxy<{ [key: string]: string }>(
-      {},
-      {
-        get(obj, prop, value) {
-          return [...base.tree.map((t) => t.identifier), base.identifier, prop].join("::");
-        },
-      }
-    );
-  }
 }
 
 export const uuid = uuidv4;

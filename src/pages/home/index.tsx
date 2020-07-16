@@ -11,12 +11,11 @@ import { gameManager } from "src/state/sudoku";
 import { useRecoilAction } from "src/utils/recoil";
 import { uiStore } from "src/state/ui";
 import { uuid } from "src/utils";
+import Board from "src/pages/home/board";
 
 const Home = () => {
-  const stack = useRecoilValue(uiStore.modalManager.stack);
-  const pushModal = useRecoilAction(uiStore.modalManager.openModal);
   const gameBoards = useRecoilValue(gameManager.gameBoards);
-  const activeGames = useRecoilValue(gameManager._activeGames);
+  const currentGame = useRecoilValue(gameManager.currentGame);
   const setCurrentGame = useRecoilAction(gameManager.setCurrentGame);
 
   /*
@@ -48,20 +47,6 @@ const Home = () => {
               </a>
             ))}
           </div>
-          <h3 className={"font-bold text-lg"}>Stack</h3>
-          <div className={"pl-2"}>
-            {stack.map((c, i) => (
-              <div key={i}>{JSON.stringify(c)}</div>
-            ))}
-          </div>
-          <h3 className={"font-bold text-lg"}>Active games</h3>
-          <div className={"pl-2"}>
-            {Object.entries(activeGames).map(([name, game], i) => (
-              <a className={"table cursor-pointer"} key={i}>
-                {name}
-              </a>
-            ))}
-          </div>
         </div>
       </div>
       <div className={"w-9/12 h-full flex flex-col"}>
@@ -79,7 +64,9 @@ const Home = () => {
             Copy board
           </button>
         </div>
-        <div className={"flex-1"}></div>
+        <div className={"flex-1"}>
+          <Board game={currentGame} />
+        </div>
       </div>
     </S.Wrapper>
   );

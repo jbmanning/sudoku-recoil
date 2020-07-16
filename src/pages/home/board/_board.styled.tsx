@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import tailwindConfig, { tailwindTheme } from "src/styles/tailwind";
-import { Cell as CellObj, Game, ValueSource } from "src/state/sudoku";
+import { Cell as CellObj, Game, IReadonlyGame, ValueSource } from "src/state/sudoku";
 
 const getBorderColor = ({ game }: { game: Game }) =>
   game.isSolved
@@ -11,7 +11,7 @@ const getBorderColor = ({ game }: { game: Game }) =>
     : tailwindTheme.colors.gray["900"];
 
 type BoardProps = {
-  game: Game;
+  game: IReadonlyGame;
 };
 
 export const Board = styled.div<BoardProps>`
@@ -78,7 +78,7 @@ const StyledGameCell = styled.div<GameCellProps>`
     const standardBorder = `2px solid ${tailwindTheme.colors.gray[600]};`;
     const solidBorder = `3px solid ${getBorderColor({ game })};`;
 
-    let squareColNumber = cell.colNumber % game.squareSize;
+    /*let squareColNumber = cell.colNumber % game.squareSize;
     if (squareColNumber === 0) {
       out.push(`border-left: ${solidBorder}`);
     }
@@ -98,7 +98,7 @@ const StyledGameCell = styled.div<GameCellProps>`
     }
     if (squareRowNumber > 0 && squareRowNumber < game.squareSize) {
       out.push(`border-top: ${standardBorder}`);
-    }
+    }*/
 
     return out;
   }};

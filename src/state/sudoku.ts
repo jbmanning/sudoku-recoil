@@ -1,15 +1,9 @@
 import rawGameData from "src/__data";
-import {
-  arraysExactlyEqual,
-  objectFilter,
-  objectMap,
-  readBoardFile,
-  StateManager,
-} from "src/utils";
-import { atom, CallbackInterface, selector } from "recoil/dist";
+import { arraysExactlyEqual, objectFilter, objectMap, readBoardFile } from "src/utils";
+import { atom, selector } from "recoil/dist";
 import { UIStore, uiStore as rootUIStore } from "src/state/ui";
 import { ModalType } from "src/components/modalManager";
-import { RecoilAction, RecoilCallbackGetter } from "src/utils/recoil";
+import { RecoilCallbackGetter, StateManager } from "src/utils/recoil";
 
 /*export class Cell {
   @observable private readonly _game: Game;
@@ -592,6 +586,17 @@ export enum ValueSource {
   UserEntry,
 }
 
+export type IReadonlyGame = {
+  cells: Cell[];
+  size: number;
+  squareSize: number;
+  isValidGame: boolean;
+  isEmptyGame: boolean;
+  isPossible: boolean;
+  isValid: boolean;
+  isSolved: boolean;
+};
+
 export class Cell {
   private _game;
   index;
@@ -613,14 +618,15 @@ export class Cell {
 
 export class Game extends StateManager {
   name;
-  isValidGame = true;
-  isSolved = true;
-  isValid = true;
-  size = 5;
-  squareSize = 5;
-  isEmptyGame = false;
   cells;
-
+  size;
+  squareSize;
+  isValidGame;
+  isEmptyGame;
+  isPossible;
+  isValid;
+  isSolved;
+  readonlyGame;
   constructor(
     name: string,
     tree: StateManager[] | StateManager,
@@ -635,12 +641,83 @@ export class Game extends StateManager {
       key: this.keys.Cells,
       default: _data.map((c, i) => new Cell(this, i, c)),
     });
+
+    this.size = selector<number>({
+      key: this.keys.Size,
+      get: ({ get }) => {
+        const cells = get(this.cells);
+        return Math.sqrt(cells.length);
+      },
+    });
+
+    this.squareSize = selector<number>({
+      key: this.keys.SquareSize,
+      get: ({ get }) => {
+        const size = get(this.size);
+        return Math.sqrt(size);
+      },
+    });
+
+    this.isValidGame = selector<boolean>({
+      key: this.keys.IsValidGame,
+      get: ({ get }) => {
+        const squareSize = get(this.squareSize);
+        return squareSize % 1 === 0;
+      },
+    });
+
+    this.isEmptyGame = selector<boolean>({
+      key: this.keys.IsEmptyGame,
+      get: ({ get }) => {
+        const cells = get(this.cells);
+        return cells.filter((c) => c.value !== undefined).length === 0;
+      },
+    });
+
+    this.isPossible = selector<boolean>({
+      key: this.keys.IsPossible,
+      get: ({ get }) => {
+        const cells = get(this.cells);
+        return cells.every((c) => c.value || c.availableNumbers.length > 0);
+      },
+    });
+
+    this.isValid = selector<boolean>({
+      key: this.keys.IsValid,
+      get: ({ get }) => {
+        const cells = get(this.cells);
+        const isPossible = get(this.isPossible);
+        return isPossible && cells.every((c) => c.isValid);
+      },
+    });
+
+    this.isSolved = selector<boolean>({
+      key: this.keys.IsSolved,
+      get: ({ get }) => {
+        const cells = get(this.cells);
+        return cells.every((c) => c.value && c.isValid);
+      },
+    });
+
+    // Yes. This will trigger re-renders on everything. Address with individual getters if it becomes an issue
+    this.readonlyGame = selector<IReadonlyGame>({
+      key: this.keys.ReadonlyGame,
+      get: ({ get }) => ({
+        cells: get(this.cells),
+        size: get(this.size),
+        squareSize: get(this.squareSize),
+        isValidGame: get(this.isValidGame),
+        isEmptyGame: get(this.isEmptyGame),
+        isPossible: get(this.isPossible),
+        isValid: get(this.isValid),
+        isSolved: get(this.isSolved),
+      }),
+    });
   }
 
-  setCellValue = ({ snapshot: { getLoadable }, set }: CallbackInterface) => (
-    i: number,
-    value: number | null
-  ) => {};
+  setCellValue = (gci: RecoilCallbackGetter, i: number, value: number | null) => {
+    const { get, set } = gci();
+  };
 }
 
 class GameManager extends StateManager {
@@ -678,7 +755,13 @@ class GameManager extends StateManager {
     key: this.keys.CurrentGame,
     get: ({ get }) => {
       const gameName = get(this._currentGameName);
-      return get(this._activeGames)[gameName];
+      const currentGame = get(this._activeGames)[gameName];
+
+      if (!currentGame.isValidGame) {
+        alert("Current game does not seem to be valid");
+        return GameManager.blankReadonlyGame;
+      }
+      return currentGame;
     },
   });
 

@@ -19,9 +19,11 @@ const StateDependantLayout: FC = ({ children }) => {
 
 const BaseLayout: FC = ({ children }) => {
   return (
+    // <React.StrictMode>
     <RecoilRoot>
       <StateDependantLayout>{children}</StateDependantLayout>
     </RecoilRoot>
+    // </React.StrictMode>
   );
 };
 

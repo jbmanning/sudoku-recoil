@@ -3,7 +3,6 @@ import { ModalProps } from "src/components/modalManager";
 import BaseModal from "src/components/baseModal";
 import * as S from "./_confirmationModal.styled";
 import { useRecoilCallbackProps } from "src/utils/recoil";
-// import { useRecoilActionList } from "src/utils/recoil";
 
 const ConfirmationModal: React.FC<ModalProps> = ({ modal }) => {
   const { actions: recoilActions, message, title } = modal;
