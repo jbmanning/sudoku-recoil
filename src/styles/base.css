@@ -18,11 +18,11 @@ body {
   display: none;
 }
 
-@media (max-width: 940px) {
+/*@media (min-width: 940px) {
   #root {
-    display: none;
-  }
-  #no-mobile {
     display: block;
   }
-}
+  #no-mobile {
+    display: none;
+  }
+}*/

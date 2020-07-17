@@ -3,12 +3,25 @@ import styled from "styled-components";
 export const Wrapper = styled.div`
   background-color: var(--grey-1);
   color: var(--grey-9);
-  font-family: Montserrat, serif;
 
   display: flex;
-  align-items: flex-start;
   padding: 0.25em 0;
   min-height: 100vh;
+`;
+
+export const Button = styled.button`
+  display: block;
+  transition: all 0.3s ease-in-out;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background: var(--blue-6);
+  color: white;
+
+  &:hover {
+    background: var(--blue-8);
+    text-decoration: underline;
+  }
 `;
 
 export const LeftSidebar = styled.div`
@@ -16,43 +29,33 @@ export const LeftSidebar = styled.div`
   padding: 24px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
+
+  > *:not(:first-child) {
+    margin-top: 8px;
+  }
 `;
 
 export const BoardWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
 `;
 
 export const BoardActions = styled.div`
-  border: 2px solid var(--grey-9);
-  border-radius: 4px;
-  padding: 0 4px;
-  width: 80%;
   display: flex;
-  align-items: center;
-`;
+  align-items: flex-start;
+  justify-content: flex-start;
+  margin-left: 75px;
 
-export const Button = styled.button`
-  background-color: var(--grey-2);
-  padding: 16px 20px;
-  border-radius: 4px;
-  border: 2px solid var(--grey-9);
-  margin: 8px;
-  transition: all 0.3s ease-in-out;
-
-  :hover {
-    background-color: var(--grey-4);
-    text-decoration: underline;
-    color: var(--grey-9);
+  > *:not(:first-child) {
+    margin-left: 8px;
   }
 `;
 
 export const GamesListWrapper = styled.div`
   border-radius: 8px;
-  width: 200px;
   border: 2px solid var(--grey-4);
+  width: 100%;
 
   h3 {
     border-bottom: 1px solid var(--grey-4);
