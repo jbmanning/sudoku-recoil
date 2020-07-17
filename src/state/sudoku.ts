@@ -532,9 +532,8 @@ class SudokuStore {
   );
 
   constructor() {
-    let gameId = "yWing";
     if (process.env.NODE_ENV === "development") {
-      // gameId = "underUsed";
+      const gameId = "hiddenCandidates2";
       const game = this.knownGames.find((kg) => kg.name === gameId);
       if (game) this.startGame(game.name, game.val);
     }
@@ -543,7 +542,7 @@ class SudokuStore {
   @action startGame(name: string, data: number[]) {
     this._currentGame = new Game(name, data);
     if (process.env.NODE_ENV === "development") {
-      // this._currentGame.solveGame();
+      this._currentGame.solveGame();
     }
   }
 

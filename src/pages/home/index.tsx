@@ -1,11 +1,9 @@
-import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
+import React, { useContext } from "react";
 
 import * as S from "./_home.styled";
-import { Cell, GameContext } from "src/state/sudoku";
+import { GameContext } from "src/state/sudoku";
 import { observer } from "mobx-react-lite";
 import Board from "./board";
-import { useRecoilState } from "recoil/dist";
-import { uiStore } from "../../state/ui";
 
 const Home = observer(() => {
   const gameStore = useContext(GameContext);
@@ -15,8 +13,8 @@ const Home = observer(() => {
   return (
     <S.Wrapper>
       <S.LeftSidebar>
-        {/*<S.Button>New Board</S.Button>
-        <S.Button>Import Board</S.Button>*/}
+        <S.Button onClick={() => alert("Not implemented...")}>New Board</S.Button>
+        <S.Button onClick={() => alert("Not implemented...")}>Import Board</S.Button>
         <S.GamesListWrapper>
           <h3>Sample Games</h3>
           <hr />
@@ -48,10 +46,6 @@ const Home = observer(() => {
           <S.Button onClick={() => game.stepSolveGame()}>Step solve game</S.Button>
           <S.Button onClick={() => game.copyToClipboard()}>Copy board</S.Button>
         </S.BoardActions>
-        <div>
-          Known issues with observability on border colors when performing actions. Working to
-          move to Recoil.js for state management which should resolve issues.
-        </div>
         <Board game={game} />
       </S.BoardWrapper>
     </S.Wrapper>

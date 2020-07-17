@@ -30,7 +30,6 @@ export const BoardActions = styled.div`
   border-radius: 4px;
   padding: 0 4px;
   width: 80%;
-  margin-bottom: 28px;
   display: flex;
   align-items: center;
 `;

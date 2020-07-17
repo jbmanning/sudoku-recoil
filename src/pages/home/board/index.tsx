@@ -1,15 +1,15 @@
-import { observer } from "mobx-react-lite";
-import React, { useCallback, useContext, useMemo, useRef, useState } from "react";
-import { Cell, GameContext, Game } from "src/state/sudoku";
+import React, { FC, useCallback, useRef, useState } from "react";
+import { Game } from "src/state/sudoku";
 import * as S from "./_board.styled";
 import { useKeyDown, useOutsideClick } from "src/utils/hooks";
-import { gcn } from "src/utils";
+import { observer } from "mobx-react-lite";
+import { AvailableNumber } from "./_board.styled";
 
-type IBoardProps = {
+type BoardProps = {
   game: Game;
 };
 
-const Board = observer<IBoardProps>(({ game }) => {
+const Board = observer<BoardProps>(({ game }) => {
   const boardRef = useRef<HTMLDivElement>(null);
   const [x, setX] = useState(-1);
   const [y, setY] = useState(-1);
@@ -58,21 +58,24 @@ const Board = observer<IBoardProps>(({ game }) => {
           {c.colName}
         </S.CellSquare>
       ))}
-      {game.cells.map((c, i) => (
+      {game.cells.map((cell, i) => (
         <React.Fragment key={`invisGroup_${i}`}>
-          {c.colNumber % game.size === 0 ? (
-            <S.CellSquare key={`row_${c.rowName}`} isRowLabel>
-              {c.rowName}
+          {cell.colNumber % game.size === 0 ? (
+            <S.CellSquare key={`row_${cell.rowName}`} isRowLabel>
+              {cell.rowName}
             </S.CellSquare>
           ) : undefined}
 
           <S.CellSquare key={`cell_${i}`}>
-            <S.GameCell
-              game={game}
-              cell={c}
-              isFocused={false}
-              // onClick={cellClick(colJ, rowI)}
-            />
+            <S.StyledGameCell game={game} cell={cell} isFocused={false}>
+              {cell.value !== undefined
+                ? cell.value
+                : game.isEmptyGame
+                ? undefined
+                : cell.availableNumbers.map((a) => (
+                    <AvailableNumber key={a}>{a}</AvailableNumber>
+                  ))}
+            </S.StyledGameCell>
           </S.CellSquare>
         </React.Fragment>
       ))}

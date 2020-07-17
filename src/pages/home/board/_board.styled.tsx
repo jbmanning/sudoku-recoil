@@ -42,7 +42,7 @@ type GameCellProps = {
   isFocused: boolean;
 };
 
-const StyledGameCell = styled.div<GameCellProps>`
+export const StyledGameCell = styled.div<GameCellProps>`
   padding: 2px;
   width: 100%;
   height: 100%;
@@ -112,15 +112,3 @@ export const AvailableNumber = styled.div`
   justify-content: center;
   align-items: center;
 `;
-
-export const GameCell = observer(({ game, cell, isFocused }: GameCellProps) => {
-  return (
-    <StyledGameCell game={game} cell={cell} isFocused={isFocused}>
-      {cell.value !== undefined
-        ? cell.value
-        : game.isEmptyGame
-        ? undefined
-        : cell.availableNumbers.map((a) => <AvailableNumber key={a}>{a}</AvailableNumber>)}
-    </StyledGameCell>
-  );
-});

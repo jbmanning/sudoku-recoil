@@ -3,19 +3,19 @@ import { Helmet } from "react-helmet";
 import { observer } from "mobx-react-lite";
 import { RecoilRoot } from "recoil";
 
-import { uiStore } from "src/state/ui";
+import { UIContext } from "src/state/ui";
 import { useRecoilValue } from "recoil/dist";
 
-const StateDependantLayout: FC = ({ children }) => {
-  const title = useRecoilValue(uiStore.title);
+const StateDependantLayout = observer(({ children }) => {
+  const uiStore = useContext(UIContext);
 
   return (
     <>
-      <Helmet title={title} />
+      <Helmet title={uiStore.title} />
       {children}
     </>
   );
-};
+});
 
 const BaseLayout: FC = ({ children }) => {
   return (
