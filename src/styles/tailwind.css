@@ -1,3 +1,38 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.btn {
+  @apply block transition duration-300 ease-in-out py-2 px-4 rounded border-2 border-transparent;
+}
+.btn:hover {
+  @apply underline;
+}
+
+.btn-blue {
+  @apply bg-blue-600 text-white;
+}
+.btn-blue:hover {
+  @apply bg-blue-800;
+}
+
+.btn-white {
+  @apply bg-white text-grey-900;
+}
+.btn-white:hover {
+  @apply bg-grey-200;
+}
+
+.btn-secondary {
+  @apply bg-transparent text-blue-700 font-semibold py-2 px-4 border-blue-500 rounded;
+}
+.btn-secondary:hover {
+  @apply bg-blue-500 text-white border-transparent;
+}
+
+.btn-tertiary {
+  @apply bg-white text-grey-900;
+}
+.btn-tertiary:hover {
+  @apply border-blue-500;
+}

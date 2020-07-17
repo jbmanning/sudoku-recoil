@@ -1,21 +1,61 @@
-import { action, computed, observable } from "mobx";
-import { createContext } from "react";
-import packageJson from "src/../package.json";
+import { atom, selector } from "recoil";
+import { StateManager, RecoilAction, CallbackInterfaceGetter } from "src/utils/recoil";
+import { ModalType } from "src/components/modalManager";
 
-class UIStore {
-  private _appName = "Sudoku";
-  @observable private _title: string = "";
+export type IModal = {
+  type: ModalType;
+  title?: string;
+  message: string;
+  actions: { text: string; cb: RecoilAction<void[], void>; classNames?: string }[];
+};
 
-  @action setTitle(title: string) {
-    if (!title) this._title = "";
-    else this._title = title;
-  }
+class ModalManager extends StateManager {
+  stack = atom<IModal[]>({
+    key: this.keys.Stack,
+    default: [],
+  });
 
-  @computed get title() {
-    if (!this._title) return this._appName;
-    else return `${this._title} | ${this._appName}`;
-  }
+  openModal = (getCallbackInterface: CallbackInterfaceGetter, m: IModal) => {
+    const { get, set } = getCallbackInterface();
+    const stack = get(this.stack);
+    if (stack.includes(m)) {
+      console.error("pushModal: Attempted to push duplicate modal to stack, exiting.");
+    } else set(this.stack, [...stack, m]);
+  };
+
+  closeModal = (getCallbackInterface: CallbackInterfaceGetter, m: IModal) => {
+    const { get, set } = getCallbackInterface();
+    const stack = get(this.stack);
+    const si = stack.findIndex((e) => e === m);
+    if (si === -1) console.error("Did not find modal...");
+    else
+      set(
+        this.stack,
+        stack.filter((e) => e !== m)
+      );
+  };
 }
 
-const uiStore = new UIStore();
-export const UIContext = createContext(uiStore);
+export class UIStore extends StateManager {
+  private _appName = "Sudoku";
+  private _title = atom<string>({
+    key: this.keys._Title,
+    default: "",
+  });
+
+  title = selector<string>({
+    key: this.keys.Title,
+    get: ({ get }) => {
+      const title = get(this._title);
+      if (!title) return this._appName;
+      else return `${title} | ${this._appName}`;
+    },
+    set: ({ set }, newValue) => {
+      set(this._title, newValue);
+    },
+  });
+
+  modalManager = new ModalManager(this, "root");
+}
+
+export const uiStore = new UIStore([], "root");

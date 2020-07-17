@@ -43,4 +43,3 @@ TODO: Implementation
 * improve UI to indicate candidates have been eliminated
 * re-introduce a user friendly way to actually play the game. Currently it is only for solving automatically
 * Add unit testing to techniques
-* Move to Mobx-State-Tree to streamline backtracking using snapshots

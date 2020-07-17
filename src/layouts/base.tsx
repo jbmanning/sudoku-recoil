@@ -1,22 +1,30 @@
-import React, { useContext, FC } from "react";
+import React, { FC } from "react";
 import { Helmet } from "react-helmet";
-import { observer } from "mobx-react-lite";
 
-import { UIContext } from "src/state/ui";
+import { uiStore } from "src/state/ui";
+import { RecoilRoot, useRecoilValue } from "recoil";
+import ModalManager from "src/components/modalManager";
 
-const StateDependantLayout = observer(({ children }) => {
-  const uiStore = useContext(UIContext);
+const StateDependantLayout: FC = ({ children }) => {
+  const title = useRecoilValue(uiStore.title);
 
   return (
     <>
-      <Helmet title={uiStore.title} />
+      <Helmet title={title} />
       {children}
+      <ModalManager />
     </>
   );
-});
+};
 
 const BaseLayout: FC = ({ children }) => {
-  return <StateDependantLayout>{children}</StateDependantLayout>;
+  return (
+    // <React.StrictMode>
+    <RecoilRoot>
+      <StateDependantLayout>{children}</StateDependantLayout>
+    </RecoilRoot>
+    // </React.StrictMode>
+  );
 };
 
 export default BaseLayout;

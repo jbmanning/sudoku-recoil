@@ -1,10 +1,15 @@
 import React from "react";
 import styled from "styled-components";
 import tailwindConfig, { tailwindTheme } from "src/styles/tailwind";
-import { Cell as CellObj, Game, ValueSource } from "src/state/sudoku";
-import { observer } from "mobx-react-lite";
+import {
+  Cell as CellObj,
+  Game,
+  IReadonlyCell,
+  IReadonlyGame,
+  ValueSource,
+} from "src/state/sudoku";
 
-const getBorderColor = ({ game }: { game: Game }) =>
+const getBorderColor = ({ game }: { game: IReadonlyGame }) =>
   game.isSolved
     ? tailwindTheme.colors.green["600"]
     : !game.isValid
@@ -12,7 +17,7 @@ const getBorderColor = ({ game }: { game: Game }) =>
     : tailwindTheme.colors.gray["900"];
 
 type BoardProps = {
-  game: Game;
+  game: IReadonlyGame;
 };
 
 export const Board = styled.div<BoardProps>`
@@ -37,8 +42,8 @@ export const CellSquare = styled.div<CellSquareProps>`
 `;
 
 type GameCellProps = {
-  game: Game;
-  cell: CellObj;
+  game: IReadonlyGame;
+  cell: IReadonlyCell;
   isFocused: boolean;
 };
 
@@ -112,3 +117,15 @@ export const AvailableNumber = styled.div`
   justify-content: center;
   align-items: center;
 `;
+
+export const GameCell = ({ game, cell, isFocused }: GameCellProps) => {
+  return (
+    <StyledGameCell game={game} cell={cell} isFocused={isFocused}>
+      {cell.value !== undefined
+        ? cell.value
+        : game.isEmptyGame
+        ? undefined
+        : cell.availableNumbers.map((a) => <AvailableNumber key={a}>{a}</AvailableNumber>)}
+    </StyledGameCell>
+  );
+};

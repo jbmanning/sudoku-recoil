@@ -125,6 +125,7 @@ html {
 *::after {
   box-sizing: inherit;
   background-repeat: no-repeat;
+  border-style: solid;
 }
 
 ::before,
@@ -163,7 +164,7 @@ button,
 [type="reset"],
 [type="submit"] {
   cursor: pointer;
-  border: 0;
+  border: 0 solid;
   padding: 0;
   background: transparent;
 }
