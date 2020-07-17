@@ -5,8 +5,8 @@ export const Wrapper = styled.div`
   color: var(--grey-9);
 
   display: flex;
-  padding: 0.25em 0;
   min-height: 100vh;
+  padding: 0.25em 80px 0.25em 0;
 `;
 
 export const Button = styled.button`
@@ -30,6 +30,7 @@ export const LeftSidebar = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  flex-shrink: 0;
 
   > *:not(:first-child) {
     margin-top: 8px;
