@@ -70,14 +70,14 @@ const Home = () => {
           <button className={"btn btn-blue "} onClick={() => currentGame.resetToStart(gci)}>
             Reset to start
           </button>
+          <button className={"btn btn-blue ml-4"} onClick={() => currentGame.solveGame(gci)}>
+            Solve game
+          </button>
           <button
             className={"btn btn-blue ml-4"}
             onClick={() => currentGame.stepSolveGame(gci)}
           >
             Step solve game
-          </button>
-          <button className={"btn btn-blue ml-4"} onClick={() => currentGame.solveGame(gci)}>
-            Solve game
           </button>
           <button
             className={"btn btn-blue ml-4"}
