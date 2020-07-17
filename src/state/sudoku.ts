@@ -1,76 +1,19 @@
 import rawGameData from "src/__data";
-import { arraysExactlyEqual, objectFilter, objectMap, readBoardFile } from "src/utils";
-import { atom, selector } from "recoil/dist";
+import {
+  arraysExactlyEqual,
+  flattenArray,
+  objectFilter,
+  objectMap,
+  range,
+  readBoardFile,
+} from "src/utils";
+import { atom, selector, waitForAll } from "recoil/dist";
 import { UIStore, uiStore as rootUIStore } from "src/state/ui";
 import { ModalType } from "src/components/modalManager";
-import { RecoilCallbackGetter, StateManager } from "src/utils/recoil";
+import { CallbackInterfaceGetter, StateManager } from "src/utils/recoil";
+import copy from "copy-to-clipboard";
 
 /*export class Cell {
-  @observable private readonly _game: Game;
-  @observable private __value: number | undefined;
-  @observable readonly index: number;
-  @observable source?: ValueSource;
-  @observable groups: Group[] = [];
-  @observable notPossibleValues: Set<number> = new Set();
-
-  constructor(game: Game, value: number, i: number) {
-    this._game = game;
-    this.index = i;
-    this.setValue(value, ValueSource.InitialGame);
-  }
-
-  @computed get value() {
-    return this.__value;
-  }
-
-  @action setValue(v: number | undefined, source: ValueSource) {
-    if (this.source === ValueSource.InitialGame) {
-      throw new Error("Can not set value of static cell.");
-    } else {
-      if (v === 0 || v === undefined) {
-        this.__value = undefined;
-        this.source = undefined;
-      } else {
-        this.__value = v;
-        this.source = source;
-      }
-    }
-  }
-
-  @action addGroup(group: Group) {
-    this.groups.push(group);
-  }
-
-  @action addNotPossibleNumbers(...nums: number[]): boolean {
-    if (this.value !== undefined) return false;
-    let modified = false;
-    for (const n of nums) {
-      if (!this.notPossibleValues.has(n) && this.availableNumbers.includes(n)) {
-        this.notPossibleValues.add(n);
-        modified = true;
-      }
-    }
-    return modified;
-  }
-
-  @action reset() {
-    if (this.source !== ValueSource.InitialGame) {
-      this.setValue(undefined, ValueSource.ComputerSolved);
-      this.notPossibleValues.clear();
-    }
-  }
-
-  /!*
-        Every group must have that number available
-   *!/
-  @computed get availableNumbers() {
-    if (this.value !== undefined) return [];
-    return this._game.possibleValues.filter(
-      (possible) =>
-        !this.notPossibleValues.has(possible) &&
-        this.groups.every((g) => g.availableNumbers.includes(possible))
-    );
-  }
 
   /!*
         For every group, every cell within that group can not equal this.value
@@ -150,51 +93,6 @@ export class Game {
   @observable readonly: boolean;
   @observable actions: string[] = [];
   @observable cells: Cell[] = new Array(81);
-  @observable rows: Group[] = new Array(9);
-  @observable cols: Group[] = new Array(9);
-  @observable boxes: Group[] = new Array(9);
-
-  constructor(name: string, initial: number[], readonly: boolean = false) {
-    this.name = name;
-    this.readonly = readonly;
-    if (initial.length !== 81) {
-      console.warn("Invalid board size, should be 9x9");
-    }
-
-    for (let i = 0; i < initial.length; i += 1) {
-      this.cells[i] = new Cell(this, initial[i], i);
-    }
-
-    for (let i = 0; i < 9; i += 1) {
-      const colCells = this.cells.filter((cell, j) => j % 9 === i);
-      this.cols[i] = new Group(this, "column", colCells);
-      colCells.forEach((c) => c.addGroup(this.cols[i]));
-
-      const rowCells = this.cells.slice(i * 9, i * 9 + 9);
-      this.rows[i] = new Group(this, "row", rowCells);
-      rowCells.forEach((c) => c.addGroup(this.rows[i]));
-    }
-
-    let boxN = 0;
-    for (let i = 0; i < 3; i += 1) {
-      for (let j = 0; j < 3; j += 1) {
-        let topLeftY = i * 3;
-        let topLeftX = j * 3;
-
-        const cells = [];
-        for (let boxY = topLeftY; boxY < topLeftY + 3; boxY += 1) {
-          for (let boxX = topLeftX; boxX < topLeftX + 3; boxX += 1) {
-            cells.push(this.cells[boxY * 9 + boxX]);
-          }
-        }
-
-        const box = new Group(this, "box", cells);
-        this.boxes[boxN] = box;
-        cells.forEach((c) => c.addGroup(box));
-        boxN += 1;
-      }
-    }
-  }
 
   @computed get size() {
     return Math.sqrt(this.cells.length);
@@ -232,15 +130,7 @@ export class Game {
     return this.cells.filter((c) => c.value !== undefined).length === 0;
   }
 
-  @action solvedSquare(): boolean {
-    for (const origCell of this.cells) {
-      if (origCell.availableNumbers.length === 1) {
-        origCell.setValue(origCell.availableNumbers[0], ValueSource.ComputerSolved);
-        return true;
-      }
-    }
-    return false;
-  }
+  @action
 
   @action hiddenSingle(): boolean {
     for (const origGroup of this.groups) {
@@ -463,121 +353,6 @@ export class Game {
     return false;
   }
 
-  @action stepSolveGame(): boolean {
-    // Solved square
-    if (this.solvedSquare()) return true;
-
-    // Hidden singles
-    if (this.hiddenSingle()) return true;
-
-    // Naked pairs/triples/quads
-    if (this.nakedSets()) return true;
-
-    // Hidden pairs/triples
-    if (this.hiddenSets()) return true;
-
-    // Pointing pairs
-    if (this.pointingPairs()) return true;
-
-    // X-Wing (Superset of box line reduction/intersection removal)
-    if (this.xWing()) return true;
-
-    // Y-Wing
-    if (this.yWing()) return true;
-
-    // TODO: Swordfish
-    // if (this.swordfish()) return true;
-
-    return false;
-  }
-
-  @action solveGame() {
-    while (!this.isSolved) {
-      if (this.stepSolveGame()) {
-        if (!this.isValid) return;
-        continue;
-      }
-
-      break;
-    }
-  }
-
-  toString() {
-    return this.cells.map((c) => c.value || 0).join("");
-  }
-
-  copyToClipboard() {
-    copy(this.toString());
-  }
-
-  @action resetToStart() {
-    this.cells.forEach((c) => {
-      c.reset();
-    });
-  }
-}
-
-class SudokuStore {
-  @observable private _currentGame?: Game;
-  private static emptyGame: Game = new Game(
-    "empty game",
-    Array.from(Array(81), () => 0),
-    true
-  );
-
-  constructor() {
-    let gameId = "yWing";
-    if (process.env.NODE_ENV === "development") {
-      // gameId = "underUsed";
-      const game = this.knownGames.find((kg) => kg.name === gameId);
-      if (game) this.startGame(game.name, game.val);
-    }
-  }
-
-  @action startGame(name: string, data: number[]) {
-    this._currentGame = new Game(name, data);
-    if (process.env.NODE_ENV === "development") {
-      // this._currentGame.solveGame();
-    }
-  }
-
-  @computed get knownGames() {
-    return Object.entries(rawGameData).map(([k, v]) => ({ name: k, val: readBoardFile(v) }));
-  }
-
-export class Cell {
-  @observable private readonly _game: Game;
-  @observable private __value: number | undefined;
-  @observable readonly index: number;
-  @observable source?: ValueSource;
-  @observable groups: Group[] = [];
-  @observable notPossibleValues: Set<number> = new Set();
-
-  constructor(game: Game, value: number, i: number) {
-    this._game = game;
-    this.index = i;
-    this.setValue(value, ValueSource.InitialGame);
-  }
-
-
-this.currentGame = selector<Game>({
-      key: this.keys.CurrentGame,
-      get: ({ get }) => {
-        const currentGame = get(_currentGame);
-        if (!currentGame.isValidGame) {
-          alert("Current game does not seem to be valid");
-          return GameManager.blankReadonlyGame;
-        }
-        return _currentGame || GameManager.blankReadonlyGame;
-      },
-      set: ({ set, reset }, newValue) => {
-        reset(_currentGame);
-        set(_currentGame, newValue);
-      },
-    });
-
-
-
 */
 
 export enum ValueSource {
@@ -586,7 +361,7 @@ export enum ValueSource {
   UserEntry,
 }
 
-export type IReadonlyGame = {
+export type IReadonlyGame = Readonly<{
   cells: Cell[];
   size: number;
   squareSize: number;
@@ -595,107 +370,272 @@ export type IReadonlyGame = {
   isPossible: boolean;
   isValid: boolean;
   isSolved: boolean;
-};
+}>;
 
-export class Cell {
+export type IReadonlyCell = Readonly<{
+  colNumber: number;
+  rowNumber: number;
+  colName: string;
+  rowName: string;
+  groups: Group[];
+  index: number;
+  value: number | undefined;
+  source: ValueSource | undefined;
+  availableNumbers: number[];
+  isValid: boolean;
+}>;
+
+export class Cell extends StateManager {
   private _game;
-  index;
-  value;
-  colNumber = 3;
-  rowNumber = 3;
-  isValid = true;
-  source = ValueSource.InitialGame;
-  availableNumbers = [1, 2, 3];
-  colName = "a";
-  rowName = "a";
+  readonly colNumber;
+  readonly rowNumber;
+  readonly colName;
+  readonly rowName;
+  readonly index;
 
-  constructor(game: Game, i: number, value: number) {
+  groups: Group[] = [];
+  private readonly _blockedNumbers;
+  readonly source;
+  readonly value;
+  readonly availableNumbers;
+  readonly isValid;
+  readonly readonlyCell;
+  constructor(game: Game, index: number, value: number | undefined) {
+    super([...game.tree, game], index);
     this._game = game;
-    this.index = i;
-    this.value = value;
+    this.index = index;
+    this.colNumber = this.index % game.size;
+    this.colName = `${this.colNumber + 1}`;
+    this.rowNumber = Math.floor(this.index / game.size);
+    this.rowName = String.fromCharCode(65 + this.rowNumber);
+
+    if (value !== undefined && (value < 1 || value > game.size)) {
+      console.log("JSON");
+      console.log([value]);
+      throw new Error("Invalid starting value");
+    }
+    this.value = atom<number | undefined>({
+      key: this.keys.Value,
+      default: value,
+    });
+
+    this.source = atom<ValueSource | undefined>({
+      key: this.keys.Source,
+      default: value !== undefined ? ValueSource.InitialGame : undefined,
+    });
+
+    this._blockedNumbers = atom<Set<number>>({
+      key: this.keys._blockedNumbers,
+      default: new Set(),
+    });
+
+    this.availableNumbers = selector<number[]>({
+      key: this.keys.availableNumbers,
+      get: ({ get }) => {
+        if (get(this.value) !== undefined) return [];
+        return this._game.possibleValues.filter(
+          (possible) =>
+            !get(this._blockedNumbers).has(possible) &&
+            this.groups.every((g) => get(g.availableNumbers).includes(possible))
+        );
+      },
+    });
+
+    this.isValid = selector<boolean>({
+      key: this.keys.IsValid,
+      get: ({ get }) =>
+        get(this.value) === undefined ||
+        this.groups.every((g) =>
+          g.cells.every((c) => c === this || get(c.value) !== get(this.value))
+        ),
+    });
+
+    this.readonlyCell = selector<IReadonlyCell>({
+      key: this.keys.ReadonlyCell,
+      get: ({ get }) => ({
+        colNumber: this.colNumber,
+        rowNumber: this.rowNumber,
+        colName: this.colName,
+        rowName: this.rowName,
+        groups: this.groups,
+        index: this.index,
+        value: get(this.value),
+        source: get(this.source),
+        availableNumbers: get(this.availableNumbers),
+        isValid: get(this.isValid),
+      }),
+    });
+  }
+
+  addGroup = (group: Group) => {
+    this.groups.push(group);
+  };
+
+  setValue(
+    gci: CallbackInterfaceGetter,
+    newValue: number | undefined,
+    newSource: ValueSource
+  ): boolean {
+    const { get, set } = gci();
+
+    const source = get(this.source);
+    if (source === ValueSource.InitialGame) {
+      throw new Error("Can not set value of static cell.");
+    } else {
+      if (newValue === 0 || newValue === undefined) {
+        set(this.value, undefined);
+        set(this.source, undefined);
+      } else {
+        set(this.value, newValue);
+        set(this.source, newSource);
+      }
+    }
+    return true;
+  }
+
+  reset(gci: CallbackInterfaceGetter) {
+    const { get, set } = gci();
+    const source = get(this.source);
+    if (source !== ValueSource.InitialGame) {
+      this.setValue(gci, undefined, ValueSource.ComputerSolved);
+      const blockedNumbers = get(this._blockedNumbers);
+      blockedNumbers.clear();
+      set(this._blockedNumbers, blockedNumbers);
+    }
+  }
+
+  addNotPossibleNumbers(gci: CallbackInterfaceGetter, ...nums: number[]): boolean {
+    const { get, set } = gci();
+    if (this.value !== undefined) return false;
+    let modified = false;
+    const blockedNumbers = get(this._blockedNumbers);
+    const availableNumbers = get(this.availableNumbers);
+    for (const n of nums) {
+      if (!blockedNumbers.has(n) && availableNumbers.includes(n)) {
+        blockedNumbers.add(n);
+        modified = true;
+      }
+    }
+    set(this._blockedNumbers, blockedNumbers);
+    return modified;
+  }
+}
+
+export class Group extends StateManager {
+  private _game;
+  readonly cells;
+
+  availableNumbers;
+  constructor(tree: StateManager[], game: Game, type: string, index: number, cells: Cell[]) {
+    super(tree, `${type}_${index}`);
+    this._game = game;
+    this.cells = cells;
+
+    this.availableNumbers = selector<number[]>({
+      key: this.keys.availableNumbers,
+      get: ({ get }) => {
+        return this._game.possibleValues.filter((possible) =>
+          this.cells.every((c) => get(c.value) !== possible)
+        );
+      },
+    });
   }
 }
 
 export class Game extends StateManager {
-  name;
-  cells;
-  size;
-  squareSize;
-  isValidGame;
-  isEmptyGame;
-  isPossible;
-  isValid;
-  isSolved;
-  readonlyGame;
+  readonly name;
+  readonly cells;
+  readonly size;
+  readonly squareSize;
+  readonly isValidGame;
+  readonly possibleValues;
+  readonly rows: Group[];
+  readonly cols: Group[];
+  readonly boxes: Group[];
+  readonly groups: Group[];
+
+  readonly isEmptyGame;
+  readonly isPossible;
+  readonly isValid;
+  readonly isSolved;
+  readonly readonlyGame;
   constructor(
-    name: string,
     tree: StateManager[] | StateManager,
-    data: any,
-    readonly: boolean = false
+    name: string,
+    recoilVersion: number,
+    data: any
   ) {
-    super(name, tree);
+    super(tree, [name, recoilVersion].join("."));
     this.name = name;
-
     let _data = readBoardFile(data);
-    this.cells = atom<Cell[]>({
-      key: this.keys.Cells,
-      default: _data.map((c, i) => new Cell(this, i, c)),
-    });
+    this.size = Math.sqrt(_data.length);
+    this.squareSize = Math.sqrt(this.size);
+    this.isValidGame = this.squareSize % 1 === 0;
+    this.possibleValues = range(1, this.size + 1);
 
-    this.size = selector<number>({
-      key: this.keys.Size,
-      get: ({ get }) => {
-        const cells = get(this.cells);
-        return Math.sqrt(cells.length);
-      },
-    });
+    // Cell references the static values of `Game`. This must be run after those properties are set.
+    this.cells = _data.map<Cell>((v, i) => new Cell(this, i, v === 0 ? undefined : v));
 
-    this.squareSize = selector<number>({
-      key: this.keys.SquareSize,
-      get: ({ get }) => {
-        const size = get(this.size);
-        return Math.sqrt(size);
-      },
-    });
+    this.rows = new Array(this.size);
+    this.cols = new Array(this.size);
+    this.boxes = new Array(this.size);
 
-    this.isValidGame = selector<boolean>({
-      key: this.keys.IsValidGame,
-      get: ({ get }) => {
-        const squareSize = get(this.squareSize);
-        return squareSize % 1 === 0;
-      },
-    });
+    for (let i = 0; i < this.size; i += 1) {
+      const colCells = this.cells.filter((cell, j) => j % this.size === i);
+      this.cols[i] = new Group([...this.tree, this], this, "column", i, colCells);
+      colCells.forEach((c) => c.addGroup(this.cols[i]));
+
+      const rowCells = this.cells.slice(i * this.size, i * this.size + this.size);
+      this.rows[i] = new Group([...this.tree, this], this, "row", i, rowCells);
+      rowCells.forEach((c) => c.addGroup(this.rows[i]));
+    }
+
+    let boxN = 0;
+    for (let i = 0; i < this.squareSize; i += 1) {
+      for (let j = 0; j < this.squareSize; j += 1) {
+        let topLeftY = i * this.squareSize;
+        let topLeftX = j * this.squareSize;
+
+        const boxCells = [];
+        for (let boxY = topLeftY; boxY < topLeftY + this.squareSize; boxY += 1) {
+          for (let boxX = topLeftX; boxX < topLeftX + this.squareSize; boxX += 1) {
+            boxCells.push(this.cells[boxY * this.size + boxX]);
+          }
+        }
+        const box = new Group([...this.tree, this], this, "box", boxN, boxCells);
+        this.boxes[boxN] = box;
+        boxCells.forEach((c) => c.addGroup(box));
+        boxN += 1;
+      }
+    }
+    this.groups = [...this.boxes, ...this.rows, ...this.cols];
 
     this.isEmptyGame = selector<boolean>({
       key: this.keys.IsEmptyGame,
       get: ({ get }) => {
-        const cells = get(this.cells);
-        return cells.filter((c) => c.value !== undefined).length === 0;
+        return this.cells.filter((c) => get(c.value) !== undefined).length === 0;
       },
     });
 
     this.isPossible = selector<boolean>({
       key: this.keys.IsPossible,
       get: ({ get }) => {
-        const cells = get(this.cells);
-        return cells.every((c) => c.value || c.availableNumbers.length > 0);
+        return this.cells.every((c) => get(c.value) || get(c.availableNumbers).length > 0);
       },
     });
 
     this.isValid = selector<boolean>({
       key: this.keys.IsValid,
       get: ({ get }) => {
-        const cells = get(this.cells);
         const isPossible = get(this.isPossible);
-        return isPossible && cells.every((c) => c.isValid);
+        return isPossible && this.cells.every((c) => get(c.isValid));
       },
     });
 
     this.isSolved = selector<boolean>({
       key: this.keys.IsSolved,
       get: ({ get }) => {
-        const cells = get(this.cells);
-        return cells.every((c) => c.value && c.isValid);
+        return this.cells.every((c) => get(c.value) !== undefined && c.isValid);
       },
     });
 
@@ -703,10 +643,10 @@ export class Game extends StateManager {
     this.readonlyGame = selector<IReadonlyGame>({
       key: this.keys.ReadonlyGame,
       get: ({ get }) => ({
-        cells: get(this.cells),
-        size: get(this.size),
-        squareSize: get(this.squareSize),
-        isValidGame: get(this.isValidGame),
+        cells: this.cells,
+        size: this.size,
+        squareSize: this.squareSize,
+        isValidGame: this.isValidGame,
         isEmptyGame: get(this.isEmptyGame),
         isPossible: get(this.isPossible),
         isValid: get(this.isValid),
@@ -715,8 +655,102 @@ export class Game extends StateManager {
     });
   }
 
-  setCellValue = (gci: RecoilCallbackGetter, i: number, value: number | null) => {
-    const { get, set } = gci();
+  solvedSquare(gci: CallbackInterfaceGetter): boolean {
+    const { get } = gci();
+    for (const origCell of this.cells) {
+      const avail = get(origCell.availableNumbers);
+      if (avail.length === 1) {
+        origCell.setValue(gci, avail[0], ValueSource.ComputerSolved);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async stepSolveGame(gci: CallbackInterfaceGetter): Promise<boolean> {
+    const { get } = gci();
+    /*
+        TODO:
+          Figure out how to wait for batched updates. Calling this function in a loop will
+          cause future iterations to repeat the same logic. Changing the tree of calls to be
+          async seems to resolve the issue. This may be due to the updates not being stored in
+          render loop? (<-- I don't know if this even is a thing. Just rambling idea.)
+     */
+    // @ts-ignore
+    // snapshot._store.fireNodeSubscriptions();
+    /*get(
+      waitForAll(
+        flattenArray([
+          // game atoms
+          this.isEmptyGame,
+          this.isPossible,
+          this.isValid,
+          this.isSolved,
+          // @ts-ignore
+          this.readonlyGame,
+          // group atoms
+          ...this.groups.map((g) => [g.availableNumbers]),
+          // cell atoms
+          ...this.cells.map((c) => [
+            c.source,
+            c.value,
+            c.availableNumbers,
+            c.isValid,
+            c.readonlyCell,
+          ]),
+        ])
+      )
+    );*/
+    if (!get(this.isValid) || get(this.isSolved)) return false;
+
+    // Solved square
+    if (this.solvedSquare(gci)) return true;
+
+    // Hidden singles
+    // if (this.hiddenSingle(gci)) return true;
+    //
+    // // Naked pairs/triples/quads
+    // if (this.nakedSets(gci)) return true;
+    //
+    // // Hidden pairs/triples
+    // if (this.hiddenSets(gci)) return true;
+    //
+    // // Pointing pairs
+    // if (this.pointingPairs(gci)) return true;
+    //
+    // // X-Wing (Superset of box line reduction/intersection removal)
+    // if (this.xWing(gci)) return true;
+    //
+    // // Y-Wing
+    // if (this.yWing(gci)) return true;
+
+    // TODO: Swordfish
+    // if (this.swordfish(gci)) return true;
+
+    console.log("RETURNING FALSE v2");
+    return false;
+  }
+
+  async solveGame(gci: CallbackInterfaceGetter) {
+    while (true) {
+      const madeChanges = await this.stepSolveGame(gci);
+      if (!madeChanges) break;
+    }
+  }
+
+  toString = (gci: CallbackInterfaceGetter) => {
+    const { get } = gci();
+    return this.cells.map((c) => get(c.value) || 0).join("");
+  };
+
+  copyToClipboard = (gci: CallbackInterfaceGetter) => {
+    copy(this.toString(gci));
+  };
+
+  resetToStart = (gci: CallbackInterfaceGetter) => {
+    this.cells.forEach((c) => {
+      c.reset(gci);
+    });
   };
 }
 
@@ -724,15 +758,15 @@ class GameManager extends StateManager {
   private static _defaultGameBoards = objectMap(rawGameData, (v) => readBoardFile(v));
   static defaultGameName = "default";
   static blankReadonlyGame = new Game(
-    "empty game",
     [],
-    Array.from(Array(81), () => 0),
-    true
+    "empty game",
+    1,
+    Array.from(Array(81), () => 0)
   );
 
   uiStore;
-  constructor(identifier: string, tree: StateManager | StateManager[], uiStore: UIStore) {
-    super(identifier, tree);
+  constructor(tree: StateManager | StateManager[], identifier: string, uiStore: UIStore) {
+    super(tree, identifier);
     this.uiStore = uiStore;
   }
 
@@ -741,7 +775,7 @@ class GameManager extends StateManager {
     default: GameManager._defaultGameBoards,
   });
 
-  _activeGames = atom<{ [name: string]: Game }>({
+  private _activeGames = atom<{ [name: string]: Game }>({
     key: this.keys.ActiveGames,
     default: { [GameManager.defaultGameName]: GameManager.blankReadonlyGame },
   });
@@ -749,6 +783,11 @@ class GameManager extends StateManager {
   private _currentGameName = atom<string>({
     key: this.keys._CurrentGameName,
     default: GameManager.defaultGameName,
+  });
+
+  private _gameNameMap = atom<{ [name: string]: number }>({
+    key: this.keys._gameNameMap,
+    default: {},
   });
 
   currentGame = selector<Game>({
@@ -765,34 +804,34 @@ class GameManager extends StateManager {
     },
   });
 
-  setCurrentGame = <T extends Function>(
-    getCallbackInterface: RecoilCallbackGetter,
+  setCurrentGame<T extends Function>(
+    getCallbackInterface: CallbackInterfaceGetter,
     name: string,
     gameBoard: number[]
-  ) => {
-    const { get, set } = getCallbackInterface();
-    const activeGames = get(this._activeGames);
-    const matching = objectFilter(activeGames, (gb) =>
-      arraysExactlyEqual(
-        get(gb.cells).map((c) =>
-          c.value === undefined || c.source !== ValueSource.InitialGame ? 0 : c.value
-        ),
-        gameBoard
-      )
-    );
-    const closeModal = (getCallbackInterface: RecoilCallbackGetter) => {
-      this.uiStore.modalManager.closeModal(getCallbackInterface, modal);
-    };
+  ) {
+    const callback = (gci: CallbackInterfaceGetter) => {
+      const { get, set } = gci();
+      const gameNameMap = get(this._gameNameMap);
 
-    const callback = (getCallbackInterface: RecoilCallbackGetter) => {
-      const { get, set } = getCallbackInterface();
-      const newGame = new Game(name, [...this.tree, this], gameBoard);
+      let recoilVersion;
+      if ((recoilVersion = gameNameMap[name])) recoilVersion += 1;
+      else recoilVersion = 1;
+      // @ts-ignore https://github.com/microsoft/TypeScript/issues/13948
+      set(this._gameNameMap, { ...gameNameMap, [name]: recoilVersion });
+
+      const newGame = new Game([...this.tree, this], name, recoilVersion, gameBoard);
+
+      if (process.env.NODE_ENV === "development") {
+        newGame.solveGame(gci);
+      }
+
       const activeGames = get(this._activeGames);
       // @ts-ignore https://github.com/microsoft/TypeScript/issues/13948
       set(this._activeGames, {
         ...activeGames,
         [name]: newGame,
       });
+      set(this._currentGameName, name);
     };
 
     const modal = {
@@ -802,19 +841,38 @@ class GameManager extends StateManager {
       actions: [
         {
           text: "Confirm",
-          cb: (getCallbackInterface: RecoilCallbackGetter) => {
-            callback(getCallbackInterface);
-            closeModal(getCallbackInterface);
+          cb: (gci: CallbackInterfaceGetter) => {
+            callback(gci);
+            this.uiStore.modalManager.closeModal(gci, modal);
           },
         },
-        { text: "Cancel", cb: closeModal, classNames: "btn btn-tertiary ml-2" },
+        {
+          text: "Cancel",
+          cb: (gci: CallbackInterfaceGetter) =>
+            this.uiStore.modalManager.closeModal(gci, modal),
+          classNames: "btn btn-tertiary ml-2",
+        },
       ],
     };
+
+    const { get, set } = getCallbackInterface();
+
+    const activeGames = get(this._activeGames);
+
+    const matching = objectFilter(activeGames, (gb) => {
+      return arraysExactlyEqual(
+        gb.cells.map((cellRaw) => {
+          const cell = get(cellRaw.readonlyCell);
+          return cell.source === ValueSource.InitialGame ? cell.value : 0;
+        }),
+        gameBoard
+      );
+    });
 
     Object.keys(matching).length === 0
       ? callback(getCallbackInterface)
       : this.uiStore.modalManager.openModal(getCallbackInterface, modal);
-  };
+  }
 }
 
-export const gameManager = new GameManager("root", [], rootUIStore);
+export const gameManager = new GameManager([], "root", rootUIStore);

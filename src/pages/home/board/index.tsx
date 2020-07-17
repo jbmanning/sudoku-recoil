@@ -1,15 +1,40 @@
 import React, { useCallback, useRef, useState } from "react";
-import { Game } from "src/state/sudoku";
+import { Cell, Game, IReadonlyGame } from "src/state/sudoku";
 import * as S from "./_board.styled";
 import { useKeyDown, useOutsideClick } from "src/utils/hooks";
 import { useRecoilValue } from "recoil";
 
-type IBoardProps = {
+type BoardProps = {
   game: Game;
 };
+type BoardCellProps = {
+  i: number;
+  game: IReadonlyGame;
+  cell: Cell;
+};
 
-const Board = ({ game }: IBoardProps) => {
-  const cells = useRecoilValue(game.cells);
+const BoardCell = ({ i, game, cell }: BoardCellProps) => {
+  const readonlyCell = useRecoilValue(cell.readonlyCell);
+
+  return (
+    <React.Fragment>
+      {readonlyCell.colNumber % game.size === 0 ? (
+        <S.CellSquare isRowLabel>{readonlyCell.rowName}</S.CellSquare>
+      ) : undefined}
+
+      <S.CellSquare>
+        <S.GameCell
+          game={game}
+          cell={readonlyCell}
+          isFocused={false}
+          // onClick={cellClick(colJ, rowI)}
+        />
+      </S.CellSquare>
+    </React.Fragment>
+  );
+};
+
+const Board = ({ game }: BoardProps) => {
   const readonlyGame = useRecoilValue(game.readonlyGame);
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -52,32 +77,16 @@ const Board = ({ game }: IBoardProps) => {
     { targetKey: "ArrowDown", handler: downHandler },
   ]);
 
-  // const cells = useRecoilValue(game.cells);
-
   return (
     <S.Board ref={boardRef} game={readonlyGame}>
-      {cells.slice(0, readonlyGame.size).map((c) => (
+      <S.CellSquare />
+      {game.cells.slice(0, readonlyGame.size).map((c) => (
         <S.CellSquare key={`column_${c.colName}`} isColLabel>
           {c.colName}
         </S.CellSquare>
       ))}
-      {cells.map((c, i) => (
-        <React.Fragment key={`invisGroup_${i}`}>
-          {c.colNumber % readonlyGame.size === 0 ? (
-            <S.CellSquare key={`row_${c.rowName}`} isRowLabel>
-              {c.rowName}
-            </S.CellSquare>
-          ) : undefined}
-
-          <S.CellSquare key={`cell_${i}`}>
-            <S.GameCell
-              game={game}
-              cell={c}
-              isFocused={false}
-              // onClick={cellClick(colJ, rowI)}
-            />
-          </S.CellSquare>
-        </React.Fragment>
+      {game.cells.map((c, i) => (
+        <BoardCell key={`boardCell_${i}`} i={i} game={readonlyGame} cell={c} />
       ))}
     </S.Board>
   );

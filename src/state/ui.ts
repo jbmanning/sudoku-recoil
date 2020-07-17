@@ -1,5 +1,5 @@
 import { atom, selector } from "recoil";
-import { StateManager, RecoilAction, RecoilCallbackGetter } from "src/utils/recoil";
+import { StateManager, RecoilAction, CallbackInterfaceGetter } from "src/utils/recoil";
 import { ModalType } from "src/components/modalManager";
 
 export type IModal = {
@@ -15,7 +15,7 @@ class ModalManager extends StateManager {
     default: [],
   });
 
-  openModal = (getCallbackInterface: RecoilCallbackGetter, m: IModal) => {
+  openModal = (getCallbackInterface: CallbackInterfaceGetter, m: IModal) => {
     const { get, set } = getCallbackInterface();
     const stack = get(this.stack);
     if (stack.includes(m)) {
@@ -23,7 +23,7 @@ class ModalManager extends StateManager {
     } else set(this.stack, [...stack, m]);
   };
 
-  closeModal = (getCallbackInterface: RecoilCallbackGetter, m: IModal) => {
+  closeModal = (getCallbackInterface: CallbackInterfaceGetter, m: IModal) => {
     const { get, set } = getCallbackInterface();
     const stack = get(this.stack);
     const si = stack.findIndex((e) => e === m);
@@ -55,7 +55,7 @@ export class UIStore extends StateManager {
     },
   });
 
-  modalManager = new ModalManager("root", this);
+  modalManager = new ModalManager(this, "root");
 }
 
-export const uiStore = new UIStore("root", []);
+export const uiStore = new UIStore([], "root");

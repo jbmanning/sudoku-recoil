@@ -2,11 +2,11 @@ import React, { useMemo } from "react";
 import { ModalProps } from "src/components/modalManager";
 import BaseModal from "src/components/baseModal";
 import * as S from "./_confirmationModal.styled";
-import { useRecoilCallbackProps } from "src/utils/recoil";
+import { useCallbackInterface } from "src/utils/recoil";
 
 const ConfirmationModal: React.FC<ModalProps> = ({ modal }) => {
   const { actions: recoilActions, message, title } = modal;
-  const gci = useRecoilCallbackProps();
+  const gci = useCallbackInterface();
   const actions = useMemo(
     () =>
       recoilActions.map((ra) => ({

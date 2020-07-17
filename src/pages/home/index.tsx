@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 
 import * as S from "./_home.styled";
 import {
@@ -8,15 +8,25 @@ import {
   useResetRecoilState,
 } from "recoil/dist";
 import { gameManager } from "src/state/sudoku";
-import { useRecoilAction } from "src/utils/recoil";
+import { useCallbackInterface, useRecoilAction } from "src/utils/recoil";
 import { uiStore } from "src/state/ui";
-import { uuid } from "src/utils";
+import { gcn, uuid } from "src/utils";
 import Board from "src/pages/home/board";
 
 const Home = () => {
   const gameBoards = useRecoilValue(gameManager.gameBoards);
   const currentGame = useRecoilValue(gameManager.currentGame);
-  const setCurrentGame = useRecoilAction(gameManager.setCurrentGame);
+  const gci = useCallbackInterface();
+
+  /* eslint-disable react-hooks/exhaustive-deps */
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      let gameName = "underUsed";
+      const game = gameBoards[gameName];
+      // if (game) setCurrentGame(gameName, game);
+    }
+  }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   /*
   const importBoard = useCallback(() => {
@@ -28,9 +38,11 @@ const Home = () => {
 
   return (
     <S.Wrapper>
-      <div className={"w-3/12 h-full p-4 flex flex-col items-start"}>
-        <button className={"btn btn-blue"}>Clear Board</button>
-        <button className={"btn btn-blue mt-4"} onClick={() => {}}>
+      <div className={"w-64 h-full p-4 flex flex-col items-start"}>
+        <button className={"btn btn-blue"} onClick={() => alert("Not implemented...")}>
+          Clear Board
+        </button>
+        <button className={"btn btn-blue mt-4"} onClick={() => alert("Not implemented...")}>
           Import Board
         </button>
 
@@ -39,9 +51,13 @@ const Home = () => {
           <div className={"pl-2"}>
             {Object.entries(gameBoards).map(([name, board]) => (
               <a
-                className={"table cursor-pointer"}
+                className={gcn(
+                  "table",
+                  "cursor-pointer",
+                  currentGame.name === name && "font-bold underline"
+                )}
                 key={name}
-                onClick={() => setCurrentGame(uuid(), board)}
+                onClick={() => gameManager.setCurrentGame(gci, name, board)}
               >
                 {name}
               </a>
@@ -49,22 +65,28 @@ const Home = () => {
           </div>
         </div>
       </div>
-      <div className={"w-9/12 h-full flex flex-col"}>
+      <div className={"w-9/12 h-full flex flex-col justify-start items-start"}>
         <div className={" p-4 flex"}>
-          <button className={"btn btn-blue "} onClick={() => 5}>
+          <button className={"btn btn-blue "} onClick={() => currentGame.resetToStart(gci)}>
             Reset to start
           </button>
-          <button className={"btn btn-blue ml-4"} onClick={() => 5}>
+          <button
+            className={"btn btn-blue ml-4"}
+            onClick={() => currentGame.stepSolveGame(gci)}
+          >
             Step solve game
           </button>
-          <button className={"btn btn-blue ml-4"} onClick={() => 5}>
+          <button className={"btn btn-blue ml-4"} onClick={() => currentGame.solveGame(gci)}>
             Solve game
           </button>
-          <button className={"btn btn-blue ml-4"} onClick={() => 5}>
+          <button
+            className={"btn btn-blue ml-4"}
+            onClick={() => currentGame.copyToClipboard(gci)}
+          >
             Copy board
           </button>
         </div>
-        <div className={"flex-1"}>
+        <div className={""}>
           <Board game={currentGame} />
         </div>
       </div>
